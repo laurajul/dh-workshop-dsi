@@ -44,6 +44,18 @@ Learn how to access and work with Europeana's aggregated cultural heritage data:
 
 ---
 
+### Notebook 1b: IIIF — One Standard, Every Museum (`01b_iiif_image_api.ipynb`)
+
+See what the IIIF standard makes possible, hands-on:
+
+- **Overview graphics**: The virtues of IIIF and the manifest → canvas → image service chain, drawn from a live manifest
+- **Image API**: One image, many views (crops, rotation, greyscale, …) by editing only the URL
+- **Click-and-annotate tool**: Drag a rectangle on the image to get `x,y,w,h`, add labels, and export Python / IIIF annotation JSON
+
+**Key concepts**: IIIF manifests, Image API URLs, region requests, W3C annotations
+
+---
+
 ### Notebook 2: Download Uppsala Collection & Semantic Search (`02_download_and_clip_search.ipynb`)
 
 Download images and search them using natural language:
@@ -154,6 +166,7 @@ Navigate to the `notebooks/` directory and open `01_europeana_api_and_data.ipynb
 DH-Workshop/
 ├── notebooks/
 │   ├── 01_europeana_api_and_data.ipynb      # API, search, download
+│   ├── 01b_iiif_image_api.ipynb             # IIIF overview + click-to-annotate
 │   ├── 02_download_and_clip_search.ipynb    # Uppsala + semantic search
 │   ├── 03_find_similar_images.ipynb         # Upload photo, find similar
 │   ├── 04_advanced_compute_embeddings.ipynb # GPU: compute embeddings
