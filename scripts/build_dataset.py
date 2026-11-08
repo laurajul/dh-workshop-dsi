@@ -121,31 +121,52 @@ def set_thumb_rate(rate):
     THUMB_LIMITER = RateLimiter(rate) if rate else None
 
 
+def check_key(key, source):
+    # A placeholder such as "..." or "<your key>" would only produce a confusing HTTP 401 later.
+    if not re.fullmatch(r"[A-Za-z0-9]{4,40}", key):
+        raise SystemExit(f"The API key from {source} does not look like a Europeana key (letters and digits only; "
+                         f"got {len(key)} characters starting {key[:3]!r}). Set your real key, e.g. "
+                         f"export EUROPEANA_API_KEY=yourkey, or put it in misc/api-key-europeana.txt.")
+    return key
+
+
 def load_key(arg):
     if arg:
-        return arg
-    if os.environ.get("EUROPEANA_API_KEY"):
-        return os.environ["EUROPEANA_API_KEY"].strip()
+        return check_key(arg.strip(), "--api-key")
+    if os.environ.get("EUROPEANA_API_KEY", "").strip():
+        return check_key(os.environ["EUROPEANA_API_KEY"].strip(), "EUROPEANA_API_KEY")
     for f in KEY_FILES:
         if f.exists() and f.read_text().strip():
-            return f.read_text().strip()
+            return check_key(f.read_text().strip(), str(f))
     print("! No API key found, using the demo key (heavily rate limited). See --api-key.", file=sys.stderr)
     return "api2demo"
 
 
+def redact(text):
+    return re.sub(r"(wskey=)[^&\s]+", r"\1***", str(text))      # error messages contain the URL, and with it the key
+
+
 def get_json(params, retries=5):
+    last = ""
     for attempt in range(retries):
         LIMITER.wait()
         try:
             r = session().get(API, params=params, timeout=60)
-            if r.status_code == 429:
-                time.sleep(15 * (attempt + 1)); continue
-            r.raise_for_status()
+        except requests.RequestException as e:
+            last = redact(e)
+        else:
+            if r.status_code in (401, 403):
+                raise SystemExit(f"Europeana rejected the API key (HTTP {r.status_code}). Check EUROPEANA_API_KEY or "
+                                 "misc/api-key-europeana.txt. Keys are free at https://pro.europeana.eu/page/get-api; "
+                                 "the shared demo key is api2demo.")
+            if r.status_code == 429 or r.status_code >= 500:
+                last = f"HTTP {r.status_code}"
+                time.sleep((15 if r.status_code == 429 else 3) * (attempt + 1)); continue
+            if r.status_code >= 400:
+                raise RuntimeError(f"HTTP {r.status_code} from the Europeana API")
             return r.json()
-        except requests.RequestException:
-            if attempt == retries - 1:
-                raise
-            time.sleep(3 * (attempt + 1))
+        time.sleep(3 * (attempt + 1))
+    raise RuntimeError(f"Europeana API request failed after {retries} attempts: {last}")
 
 
 def first(v, default=""):

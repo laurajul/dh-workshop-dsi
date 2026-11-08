@@ -36,16 +36,19 @@
 #   WORKERS=32                         download/preprocess workers
 #   HARVEST_ARGS="--rate 6"            extra options for the harvest stage
 #   MIN_SHARD_MINUTES=75  AUTO_RESUBMIT=0
-#   EUROPEANA_API_KEY=...              or put the key in misc/api-key-europeana.txt
+#   EUROPEANA_API_KEY=YOUR_KEY              or put the key in misc/api-key-europeana.txt
 set -euo pipefail
 
-# --- environment: edit for your cluster -------------------------------------------------------------------
-# module load Python/3.12 CUDA
-# source "$HOME/venvs/dh-workshop/bin/activate"      # needs torch, numpy, pillow, requests and the `clip` package
-PYTHON="${PYTHON:-python}"
-# -----------------------------------------------------------------------------------------------------------
-
 REPO="${REPO:-${SLURM_SUBMIT_DIR:-$PWD}}"
+
+# Python: the uv environment in the repository root (create it once: uv venv && uv pip install -r requirements.txt).
+# Set PYTHON=/path/to/python to use another interpreter.
+PYTHON="${PYTHON:-$REPO/.venv/bin/python}"
+if [ ! -x "$PYTHON" ] || ! "$PYTHON" -c "import torch, clip, numpy, PIL, requests" 2>/dev/null; then
+    echo "error: $PYTHON is missing or cannot import torch, clip, numpy, PIL, requests." >&2
+    echo "Create the environment once, from the repository root:  uv venv && uv pip install -r requirements.txt" >&2
+    exit 1
+fi
 DATA="${DATA:-/scratch/${USER}/dsi-workshop}"
 THEME="${THEME-art}"                      # THEME="" means all themes
 BUDGET_GB="${BUDGET_GB:-0.96}"
@@ -82,13 +85,8 @@ if [ -z "$http_code" ] || [ "$http_code" = "000" ]; then
 fi
 
 # --- 0. CLIP weights -------------------------------------------------------------------------------------
-if [ -f "$DATA/models/ViT-B-32.pt" ]; then
-    echo "[$(stamp)] 0/3 CLIP weights present: $DATA/models/ViT-B-32.pt"
-else
-    echo "[$(stamp)] 0/3 downloading the CLIP ViT-B/32 weights (about 340 MB) to $DATA/models"
-    "$PYTHON" -c "import clip; clip.load('ViT-B/32', device='cpu', download_root='$DATA/models'); print('ok')"
-    [ -f "$DATA/models/ViT-B-32.pt" ] || { echo "error: the CLIP download did not produce ViT-B-32.pt" >&2; exit 1; }
-fi
+echo "[$(stamp)] 0/3 CLIP weights"
+"$REPO/scripts/slurm/get_clip_weights.sh" "$DATA"
 
 # --- 1. harvest ------------------------------------------------------------------------------------------
 echo "[$(stamp)] 1/3 harvest (skips institutions that are already done)"

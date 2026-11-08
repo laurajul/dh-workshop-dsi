@@ -17,16 +17,19 @@
 #   DATA=/scratch/$USER/dsi-workshop   output folder (shared by all three stages)
 #   BUDGET_GB=9.5 MARGIN=1.1           size budget; harvest MARGIN times more, merge trims to the budget
 #   HARVEST_ARGS="--rate 6"            any further build_dataset.py options
-#   EUROPEANA_API_KEY=...              or put the key in misc/api-key-europeana.txt
+#   EUROPEANA_API_KEY=YOUR_KEY              or put the key in misc/api-key-europeana.txt
 set -euo pipefail
 
-# --- environment: edit for your cluster -------------------------------------------------------------------
-# module load Python/3.12
-# source "$HOME/venvs/dh-workshop/bin/activate"
-PYTHON="${PYTHON:-python}"
-# -----------------------------------------------------------------------------------------------------------
-
 REPO="${REPO:-${SLURM_SUBMIT_DIR:-$PWD}}"
+
+# Python: the uv environment in the repository root (create it once: uv venv && uv pip install -r requirements.txt).
+# Set PYTHON=/path/to/python to use another interpreter.
+PYTHON="${PYTHON:-$REPO/.venv/bin/python}"
+if [ ! -x "$PYTHON" ] || ! "$PYTHON" -c "import requests" 2>/dev/null; then
+    echo "error: $PYTHON is missing or cannot import requests." >&2
+    echo "Create the environment once, from the repository root:  uv venv && uv pip install -r requirements.txt" >&2
+    exit 1
+fi
 DATA="${DATA:-/scratch/${USER}/dsi-workshop}"
 BUDGET_GB="${BUDGET_GB:-9.5}"
 MARGIN="${MARGIN:-1.1}"

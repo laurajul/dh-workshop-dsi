@@ -14,13 +14,16 @@
 #   MAX_GB=9.5   size limit for metadata.csv + embeddings
 set -euo pipefail
 
-# --- environment: edit for your cluster -------------------------------------------------------------------
-# module load Python/3.12
-# source "$HOME/venvs/dh-workshop/bin/activate"
-PYTHON="${PYTHON:-python}"
-# -----------------------------------------------------------------------------------------------------------
-
 REPO="${REPO:-${SLURM_SUBMIT_DIR:-$PWD}}"
+
+# Python: the uv environment in the repository root (create it once: uv venv && uv pip install -r requirements.txt).
+# Set PYTHON=/path/to/python to use another interpreter.
+PYTHON="${PYTHON:-$REPO/.venv/bin/python}"
+if [ ! -x "$PYTHON" ] || ! "$PYTHON" -c "import numpy" 2>/dev/null; then
+    echo "error: $PYTHON is missing or cannot import numpy." >&2
+    echo "Create the environment once, from the repository root:  uv venv && uv pip install -r requirements.txt" >&2
+    exit 1
+fi
 DATA="${DATA:-/scratch/${USER}/dsi-workshop}"
 MAX_GB="${MAX_GB:-9.5}"
 
