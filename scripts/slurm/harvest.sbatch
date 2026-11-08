@@ -7,7 +7,8 @@
 #SBATCH --error=/scratch/%u/logs/%x_%A.out
 #
 # Stage 1 of 3: collect the metadata records from the Europeana Search API (no GPU needed).
-# About 70,000 requests for the 9.5 GB selection, throttled to 8 per second (about 2.5 hours).
+# About 13,000 requests for the default selection (Europeana's Art collection, images only, 1.26 million records),
+# throttled to 8 per second: about 30 minutes. Other selections: build_dataset.py options such as --theme.
 # Resumable: if the job hits the time limit, submit it again and it continues where it stopped.
 #
 # One-time: mkdir -p /scratch/$USER/logs   (sbatch does not create the folder for the log files)

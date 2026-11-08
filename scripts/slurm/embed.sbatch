@@ -11,14 +11,14 @@
 # only the vectors and the URL that served each image. Nothing is stored except two small part files.
 #
 # Do not call sbatch on this file directly; use scripts/slurm/submit_embed.sh, which sets the array size.
-# (Direct use:  sbatch --array=0-137%2 --export=ALL,SHARDS=138 scripts/slurm/embed.sbatch)
+# (Direct use:  sbatch --array=0-25%2 --export=ALL,SHARDS=26 scripts/slurm/embed.sbatch)
 #
 # Resumable: a finished shard leaves part files and is skipped, so resubmitting the same array only
 # redoes the shards that failed.
 #
 # Settings (environment variables):
 #   DATA=/scratch/$USER/dsi-workshop   same folder as the harvest
-#   SHARDS=138                         total number of shards (must equal the array size)
+#   SHARDS=26                          total number of shards (must equal the array size)
 #   THUMB_RATE=25                      Europeana thumbnail requests per second PER JOB. The total load on
 #                                      Europeana is THUMB_RATE times the number of jobs running at once
 #                                      (the "%2" in the array), 25 x 2 = 50 requests/s by default.

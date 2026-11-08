@@ -3,9 +3,11 @@
 Wraps `scripts/build_dataset.py` in batch jobs. Result: `metadata.csv` and `embeddings/clip_vit_b32.npz`, together
 at most 9.5 GB. No images are stored; each image is streamed into CLIP and discarded.
 
+The default selection is Europeana's **Art** thematic collection, images only (no books or other text), openly reusable: about 1.26 million images from 799 institutions, about 1.9 GB in the end, so the 9.5 GB limit does not cap any institution. Change the theme with `HARVEST_ARGS="--theme photography"` (or `--theme ""` for everything, which is 21 million images and does need the cap), and use a fresh `DATA` folder when you do.
+
 ## Two ways to run it
 
-**One job (`pipeline.sbatch`)**: everything in order, in a single GPU job: CLIP weights are downloaded if missing, then harvest, embed (shard after shard) and merge. Simplest to start and to reason about; it needs a long time limit (about 42 hours at the default 50 requests/s, so set `--time` to your cluster's maximum and resubmit if needed). Every step skips what is already done, so a job that runs out of time is continued by submitting the same command again. Before a shard that would not finish, the job stops cleanly (`MIN_SHARD_MINUTES`, default 75); with `AUTO_RESUBMIT=1` it resubmits itself.
+**One job (`pipeline.sbatch`)**: everything in order, in a single GPU job: CLIP weights are downloaded if missing, then harvest, embed (shard after shard) and merge. Simplest to start and to reason about; it takes about 8 hours at the default 50 requests/s (the `--time` is 24 h; set it to what your cluster allows). Every step skips what is already done, so a job that runs out of time is continued by submitting the same command again. Before a shard that would not finish, the job stops cleanly (`MIN_SHARD_MINUTES`, default 75); with `AUTO_RESUBMIT=1` it resubmits itself.
 
 ```bash
 mkdir -p /scratch/$USER/logs
@@ -17,10 +19,10 @@ sbatch scripts/slurm/pipeline.sbatch
 
 The rest of this file describes the separate stages; the setup, the load on Europeana and the failure notes apply to both.
 
-| Stage | Script | Resources | Time (9.5 GB selection) |
+| Stage | Script | Resources | Time (Art selection, 1.26 million images) |
 |---|---|---|---|
-| 1. harvest metadata | `harvest.sbatch` | 4 CPUs, 16 GB, no GPU | about 2.5 h, resumable |
-| 2. embed (array job) | `embed.sbatch`, submitted by `submit_embed.sh` | 1 GPU, 16 CPUs, 32 GB per task | about 138 shards, roughly 35 h at the default Europeana load |
+| 1. harvest metadata | `harvest.sbatch` | 4 CPUs, 16 GB, no GPU | about 30 min, resumable |
+| 2. embed (array job) | `embed.sbatch`, submitted by `submit_embed.sh` | 1 GPU, 16 CPUs, 32 GB per task | about 26 shards, roughly 7 h at the default Europeana load |
 | 3. merge and trim | `merge.sbatch` | 4 CPUs, 48 GB | minutes |
 
 ## One-time setup

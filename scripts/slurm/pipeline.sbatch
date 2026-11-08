@@ -3,14 +3,14 @@
 #SBATCH --gpus=H100:1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
-#SBATCH --time=48:00:00
+#SBATCH --time=24:00:00
 #SBATCH --output=/scratch/%u/logs/%x_%A.out
 #SBATCH --error=/scratch/%u/logs/%x_%A.out
 #
 # The whole dataset pipeline in ONE job, in order:
 #   0. CLIP weights   downloaded to $DATA/models/ViT-B-32.pt if not present
-#   1. harvest        metadata records from the Europeana Search API          (about 2.5 h for the 9.5 GB selection)
-#   2. embed          every shard in turn: images streamed into CLIP, vectors kept   (about 38 h at 50 requests/s)
+#   1. harvest        metadata records from the Europeana Search API          (about 30 min for the Art selection)
+#   2. embed          every shard in turn: images streamed into CLIP, vectors kept   (about 7 h at 50 requests/s)
 #   3. merge          metadata.csv + embeddings/clip_vit_b32.npz, trimmed to MAX_GB
 #
 # Every step skips what is already done (finished institutions, finished shards, existing weights), so if the job

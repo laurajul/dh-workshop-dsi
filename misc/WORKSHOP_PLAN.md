@@ -49,17 +49,19 @@ Compare a participant's own query against a shared, precomputed dataset.
 
 Cluster: `scripts/slurm/` has batch scripts for all three heavy stages (`harvest.sbatch`, `embed.sbatch` submitted by `submit_embed.sh`, `merge.sbatch`) and a README with setup, a 10,000-image test run and recovery steps.
 
-Selection: open-licence image records with a media file. Options: `--budget-gb`, or the manual caps `--per-institution` (0 = all), `--big-threshold`, `--min-items`, `--small-cap`; `--max-institutions` for tests; `--float32`.
+Selection: open-licence image records with a media file from Europeana's Art thematic collection (`--theme art`, the default; images only, so no books or other text). Options: `--budget-gb`, or the manual caps `--per-institution` (0 = all), `--big-threshold`, `--min-items`, `--small-cap`; `--max-institutions` for tests; `--float32`.
 
 ### Size budget: 9.5 GB
+
+**Theme.** The default selection is Europeana's Art collection restricted to images: 1.26 million open-licence records with a media file from 799 institutions (about 1.9 GB, so the budget below caps nothing). "Art" is a thematic collection, not a media type; it is curated by Europeana and includes paintings, drawings and prints but also decorative objects, coins, maps and ethnographic items. Without the theme filter the same query matches 21 million images and the budget would cap 55 institutions at about 61,000 records each. `--theme` changes the collection; a folder harvested with one theme refuses another.
 
 `metadata.csv` plus the embeddings are limited to 10 GB, with 9.5 GB as the target. A row costs about 1.5 KB (about 0.5 KB metadata, about 1 KB float16 vector, measured on a test sample), which is roughly 6.3 million images. All open image records in Europeana (21.0 million, `plan`, November 2026) would need about 31 GB.
 
 `--budget-gb 9.5` spreads the budget with one rule: an institution contributes all of its records if it has fewer than a cap, and exactly `cap` otherwise, with the largest cap that fits. The old plan (10,000 each from the large institutions, everything from the small ones) is the special case of a fixed cap. The workflow:
 
 ```
-python scripts/build_dataset.py plan    --budget-gb 9.5      # cap about 61,000 per institution, 6.9 million images with the 10% margin
-python scripts/build_dataset.py harvest --budget-gb 9.5      # about 70,000 requests, 2.4 h at 8 requests/s
+python scripts/build_dataset.py plan    --budget-gb 9.5      # Art collection: 1.26 million images, nothing is capped
+python scripts/build_dataset.py harvest --budget-gb 9.5      # about 13,000 requests, 30 minutes at 8 requests/s
 (cluster) embed, one job per shard
 python scripts/build_dataset.py merge   --max-gb 9.5         # trims to the real file sizes
 ```
@@ -68,7 +70,7 @@ python scripts/build_dataset.py merge   --max-gb 9.5         # trims to the real
 
 Europeana publishes no daily quota for keys. Staff have mentioned about 120 requests per 10 seconds, the fair-use policy allows limits to change, and keys may not be shared. The harvest throttles itself and backs off on HTTP 429. For very large volumes Europeana offers dumps through FTP and OAI-PMH.
 
-The embed stage makes about one thumbnail request per image (about 6.9 million at the budget), mostly to Europeana's thumbnail service and partly to institutions' IIIF servers. `--thumb-rate` (default 5 requests/s per job) throttles it, and the total is that rate times the number of jobs running at once (`--array=0-343%10` gives about 50 requests/s, so roughly 38 hours). No limit for the thumbnail service is published; start low and raise it if there are no errors. The throttle does not apply to institutions' own IIIF servers, which are spread over many hosts. The thumbnail service needs no key and its images are at most 400 px wide.
+The embed stage makes about one thumbnail request per image (1.26 million for the Art selection), mostly to Europeana's thumbnail service and partly to institutions' IIIF servers. `--thumb-rate` (default 5 requests/s per job) throttles it, and the total is that rate times the number of jobs running at once (`--array=0-343%10` gives about 50 requests/s, so roughly 38 hours). No limit for the thumbnail service is published; start low and raise it if there are no errors. The throttle does not apply to institutions' own IIIF servers, which are spread over many hosts. The thumbnail service needs no key and its images are at most 400 px wide.
 
 The notebook holds all vectors and metadata in memory (about 6 GB at the budget), which is fine on a workstation but is worth checking against the memory of the shared workspace.
 

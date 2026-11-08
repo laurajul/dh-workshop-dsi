@@ -26,7 +26,10 @@ Final output (default --out data/DSI-Workshop), the files participants use:
 Working files: harvest/records.jsonl, harvest/done_institutions.txt, embeddings/parts/, metadata_parts/.
 
 Selection
-    Records that are images, have a media file (edmIsShownBy) and are openly reusable.
+    Records that are images (TYPE:IMAGE, so no books or other text), belong to Europeana's thematic collection "art"
+    (--theme art, the default; --theme "" for all themes), have a media file (edmIsShownBy) and are openly reusable.
+    The Art collection is a theme, not a media type: it cuts across types, and its text items (books, manuscripts) are
+    left out by the image filter. Use a fresh --out folder when you change the theme; harvest refuses to mix them.
 
     Size budget (recommended): --budget-gb 9.5 limits metadata.csv plus the embeddings to that size. A row costs
     about 1.5 KB (about 0.5 KB metadata, 1 KB float16 vector), so 9.5 GB is roughly 6 million images. The budget is
@@ -152,12 +155,20 @@ def first(v, default=""):
 
 
 # ------------------------------------------------------------------ plan
-def institution_counts(key):
+def search_params(theme):
+    # Parameters that every selection query shares (the institution is added per query).
+    p = {"qf": list(BASE_FILTERS), "reusability": "open"}
+    if theme:
+        p["theme"] = theme
+    return p
+
+
+def institution_counts(key, theme):
     out, offset, page = {}, 0, 2000
     while True:
         d = get_json({"wskey": key, "query": "*", "rows": 0, "profile": "facets", "facet": "DATA_PROVIDER",
                       "f.DATA_PROVIDER.facet.limit": page, "f.DATA_PROVIDER.facet.offset": offset,
-                      "qf": BASE_FILTERS, "reusability": "open"})
+                      **search_params(theme)})
         fields = next((f["fields"] for f in d.get("facets", []) if f["name"] == "DATA_PROVIDER"), [])
         out.update({f["label"]: f["count"] for f in fields})
         if len(fields) < page:
@@ -178,7 +189,7 @@ def water_fill(sizes, budget):
 
 
 def selection(args, key):
-    counts = institution_counts(key)
+    counts = institution_counts(key, args.theme)
     chosen = {}
     if args.budget_gb:
         rows = int(args.budget_gb * 1e9 / (META_BYTES_PER_ROW + EMB_BYTES_PER_ROW) * args.margin)
@@ -207,7 +218,7 @@ def cmd_plan(args):
     total = sum(chosen.values())
     big = [n for n in chosen if (counts[n] > args.cap if args.cap else counts[n] >= args.big_threshold)]
     requests_needed = sum((n + 99) // 100 for n in chosen.values())
-    print(f"Institutions with open image records: {len(counts):,} ({sum(counts.values()):,} records)")
+    print(f"Theme: {args.theme or 'all'}. Institutions with open image records: {len(counts):,} ({sum(counts.values()):,} records)")
     if args.cap:
         print(f"Budget {args.budget_gb:g} GB x margin {args.margin:g}: each institution contributes at most {args.cap:,} records")
     print(f"Selected: {len(chosen):,} institutions ({len(big)} capped, {len(chosen) - len(big):,} taken completely)")
@@ -243,12 +254,13 @@ def record_from_item(it):
     }
 
 
-def harvest_institution(key, name, limit):
+def harvest_institution(key, name, limit, theme):
     records, cursor = [], "*"
     while not limit or len(records) < limit:
         rows = 100 if not limit else min(100, limit - len(records))
-        d = get_json({"wskey": key, "query": "*", "rows": rows, "profile": "standard",
-                      "qf": BASE_FILTERS + [f'DATA_PROVIDER:"{name}"'], "reusability": "open", "cursor": cursor})
+        q = search_params(theme)
+        q["qf"].append(f'DATA_PROVIDER:"{name}"')
+        d = get_json({"wskey": key, "query": "*", "rows": rows, "profile": "standard", "cursor": cursor, **q})
         items = d.get("items", [])
         if not items:
             break
@@ -264,6 +276,15 @@ def cmd_harvest(args):
     out = Path(args.out)
     (out / "harvest").mkdir(parents=True, exist_ok=True)
     rec_file, done_file = out / "harvest" / "records.jsonl", out / "harvest" / "done_institutions.txt"
+    config_file = out / "harvest" / "config.json"
+    config = {"theme": args.theme, "filters": BASE_FILTERS}
+    if config_file.exists() and json.loads(config_file.read_text()) != config:
+        raise SystemExit(f"{out} was harvested with other settings ({config_file.read_text()}). Use a fresh --out folder.")
+    if not config_file.exists() and (rec_file.exists() or done_file.exists()):
+        config_file.write_text(json.dumps({"theme": "", "filters": BASE_FILTERS}))      # older harvest: no theme filter
+        if json.loads(config_file.read_text()) != config:
+            raise SystemExit(f"{out} contains an earlier harvest without a theme filter. Use a fresh --out folder.")
+    config_file.write_text(json.dumps(config))
     done = set(done_file.read_text(encoding="utf-8").splitlines()) if done_file.exists() else set()
     _, chosen = selection(args, key)
     assert all(c > 0 for c in chosen.values()), "internal error: an institution has a limit of 0"
@@ -274,7 +295,7 @@ def cmd_harvest(args):
     n_records = 0
     with open(rec_file, "a", encoding="utf-8") as rf, open(done_file, "a", encoding="utf-8") as df, \
             ThreadPoolExecutor(args.workers) as ex:
-        futures = {ex.submit(harvest_institution, key, n, c): n for n, c in todo}
+        futures = {ex.submit(harvest_institution, key, n, c, args.theme): n for n, c in todo}
         for i, fut in enumerate(as_completed(futures), 1):
             name = futures[fut]
             try:
@@ -501,6 +522,7 @@ def main():
     p.add_argument("stage", choices=["plan", "harvest", "embed", "merge"])
     p.add_argument("--out", default=str(PROJECT_ROOT / "data" / "DSI-Workshop"))
     p.add_argument("--api-key")
+    p.add_argument("--theme", default="art", help='Europeana thematic collection to take records from (default: "art"; "" = all themes)')
     p.add_argument("--per-institution", type=int, default=10_000, help="records taken from each large institution (0 = all)")
     p.add_argument("--big-threshold", type=int, default=10_000, help="institutions with at least this many records count as large")
     p.add_argument("--min-items", type=int, default=1, help="skip smaller institutions with fewer records than this")
