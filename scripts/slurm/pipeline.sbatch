@@ -52,6 +52,7 @@ MIN_SHARD_MINUTES="${MIN_SHARD_MINUTES:-75}"
 AUTO_RESUBMIT="${AUTO_RESUBMIT:-0}"
 
 cd "$REPO"
+[ -f scripts/build_dataset.py ] || { echo "error: $REPO is not the repository root (scripts/build_dataset.py not found). Run sbatch from the repository root." >&2; exit 1; }
 mkdir -p "$DATA" "$DATA/models"
 BUILD="$PYTHON scripts/build_dataset.py"
 stamp() { date '+%Y-%m-%d %H:%M:%S'; }

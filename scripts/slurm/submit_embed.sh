@@ -21,9 +21,10 @@ MAX_PARALLEL="${MAX_PARALLEL:-2}"
 export THUMB_RATE="${THUMB_RATE:-25}"
 export REPO="${REPO:-$PWD}"
 
+[ -f scripts/build_dataset.py ] || { echo "Run this from the repository root (scripts/build_dataset.py not found in $PWD)." >&2; exit 1; }
 records="$DATA/harvest/records.jsonl"
 [ -f "$records" ] || { echo "No $records: run 'sbatch scripts/slurm/harvest.sbatch' first." >&2; exit 1; }
-[ -f "$DATA/models/ViT-B-32.pt" ] || { echo "Copy the CLIP weights to $DATA/models/ViT-B-32.pt first." >&2; exit 1; }
+"$here/get_clip_weights.sh" "$DATA"                      # downloads the CLIP weights if they are not there yet
 
 n=$(wc -l < "$records")
 shards=$(( (n + SHARD_SIZE - 1) / SHARD_SIZE ))

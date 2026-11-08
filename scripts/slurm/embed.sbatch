@@ -39,8 +39,9 @@ THUMB_RATE="${THUMB_RATE:-25}"
 WORKERS="${WORKERS:-32}"
 
 cd "$REPO"
+[ -f scripts/build_dataset.py ] || { echo "error: $REPO is not the repository root (scripts/build_dataset.py not found). Run sbatch from the repository root." >&2; exit 1; }
 [ -f "$DATA/harvest/records.jsonl" ] || { echo "No $DATA/harvest/records.jsonl: run harvest.sbatch first." >&2; exit 1; }
-[ -f "$DATA/models/ViT-B-32.pt" ] || { echo "Copy the CLIP weights to $DATA/models/ViT-B-32.pt first (from models/CLIP/)." >&2; exit 1; }
+[ -f "$DATA/models/ViT-B-32.pt" ] || { echo "No CLIP weights: run scripts/slurm/get_clip_weights.sh first." >&2; exit 1; }
 http_code="$(curl -s -o /dev/null --max-time 20 -w '%{http_code}' https://api.europeana.eu/thumbnail/v2/url.json || true)"
 [ "$http_code" != "000" ] && [ -n "$http_code" ] \
     || echo "warning: could not reach api.europeana.eu from this node (compute nodes may have no internet)" >&2

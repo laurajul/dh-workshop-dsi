@@ -25,10 +25,10 @@ The rest of this file describes the separate stages; the setup, the load on Euro
 
 ## One-time setup
 
-1. Clone the repository on the cluster, and from now on run everything from its root.
+1. Clone the repository on the cluster. **Run every command from the repository root** (the folder that contains `scripts/`), not from `scripts/slurm/`.
 2. Python environment with `torch`, `numpy`, `pillow`, `requests` and the `clip` package (`pip install git+https://github.com/openai/CLIP.git`). Activate it in the marked lines at the top of each `.sbatch` file, or set `PYTHON=/path/to/python`.
 3. API key: `misc/api-key-europeana.txt`, or `export EUROPEANA_API_KEY=...`.
-4. CLIP weights: `pipeline.sbatch` downloads them if they are missing. For the separate stages, put them there yourself: `mkdir -p $DATA/models && cp ViT-B-32.pt $DATA/models/` (the file is `models/CLIP/ViT-B-32.pt` in your working copy).
+4. CLIP weights: model files are not in git. `pipeline.sbatch` and `submit_embed.sh` download them if they are missing (`scripts/slurm/get_clip_weights.sh` does only that, with a checksum; it needs only curl or wget).
 5. `mkdir -p /scratch/$USER/logs` (sbatch does not create the log folder).
 
 `DATA` defaults to `/scratch/$USER/dsi-workshop`. All scripts read it from the environment, so set it once: `export DATA=...`.
@@ -37,7 +37,6 @@ The rest of this file describes the separate stages; the setup, the load on Euro
 
 ```bash
 export DATA=/scratch/$USER/dsi-test
-mkdir -p $DATA/models && cp ViT-B-32.pt $DATA/models/
 BUDGET_GB=0.016 MARGIN=1.0 sbatch scripts/slurm/harvest.sbatch      # about 1,500 requests, a few minutes
 # wait for it to finish, then:
 SHARD_SIZE=3000 scripts/slurm/submit_embed.sh                       # 4 shards, then the merge job

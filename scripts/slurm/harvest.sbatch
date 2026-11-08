@@ -32,6 +32,7 @@ MARGIN="${MARGIN:-1.1}"
 
 mkdir -p "$DATA"
 cd "$REPO"
+[ -f scripts/build_dataset.py ] || { echo "error: $REPO is not the repository root (scripts/build_dataset.py not found). Run sbatch from the repository root." >&2; exit 1; }
 echo "harvest: repo=$REPO data=$DATA budget=${BUDGET_GB} GB margin=$MARGIN"
 
 # shellcheck disable=SC2086

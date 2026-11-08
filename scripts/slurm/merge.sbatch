@@ -25,6 +25,7 @@ DATA="${DATA:-/scratch/${USER}/dsi-workshop}"
 MAX_GB="${MAX_GB:-9.5}"
 
 cd "$REPO"
+[ -f scripts/build_dataset.py ] || { echo "error: $REPO is not the repository root (scripts/build_dataset.py not found). Run sbatch from the repository root." >&2; exit 1; }
 "$PYTHON" scripts/build_dataset.py merge --out "$DATA" --max-gb "$MAX_GB"
 ls -la "$DATA/metadata.csv" "$DATA/embeddings/clip_vit_b32.npz"
 echo "Copy these two files to the workshop folder (data/DSI-Workshop/)."
