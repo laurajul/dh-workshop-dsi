@@ -18,3 +18,17 @@ models/*
 models/CLIP/*
 !models/CLIP/ViT-B-32
 references
+
+# Instructor material (not pushed)
+instructor/
+
+# Large dataset files, wherever they end up (the dataset is shared outside git)
+*.npz
+*.npy
+*.pt
+*.pth
+*.safetensors
+embeddings/
+metadata.csv
+metadata_parts/
+harvest/
