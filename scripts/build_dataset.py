@@ -306,6 +306,10 @@ def cmd_harvest(args):
         if json.loads(config_file.read_text()) != config:
             raise SystemExit(f"{out} contains an earlier harvest without a theme filter. Use a fresh --out folder.")
     config_file.write_text(json.dumps(config))
+    for f in (rec_file, done_file):                          # a job killed mid-write can leave a last line without newline
+        if f.exists() and f.stat().st_size and not f.read_bytes()[-1:] == b"\n":
+            with open(f, "ab") as fh:
+                fh.write(b"\n")
     done = set(done_file.read_text(encoding="utf-8").splitlines()) if done_file.exists() else set()
     _, chosen = selection(args, key)
     assert all(c > 0 for c in chosen.values()), "internal error: an institution has a limit of 0"
@@ -397,7 +401,10 @@ def cmd_embed(args):
     records, n_lines = {}, 0
     for line in open(out / "harvest" / "records.jsonl", encoding="utf-8"):
         n_lines += 1
-        r = json.loads(line)
+        try:
+            r = json.loads(line)
+        except ValueError:                                       # the half-written line of a harvest that was killed
+            continue
         if record_shard(r["id"], shards) == shard:               # keep only this shard's records in memory
             records[r["id"]] = r                                 # de-duplicate by Europeana ID
     rows = sorted(records.values(), key=lambda r: r["id"])
@@ -444,14 +451,18 @@ def cmd_embed(args):
           f"({int((source_of == 1).sum()):,} via IIIF, {int((source_of == 2).sum()):,} via thumbnail)")
     emb_file.parent.mkdir(parents=True, exist_ok=True)
     meta_file.parent.mkdir(parents=True, exist_ok=True)
-    with open(meta_file, "w", newline="", encoding="utf-8") as f:
+    tmp_meta, tmp_emb = meta_file.with_name(meta_file.name + ".tmp"), emb_file.with_name(emb_file.name + ".tmp")
+    with open(tmp_meta, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=FIELDS); w.writeheader()
         for i in keep:
             r, s = rows[i], int(source_of[i])
             w.writerow({**r, "small_image_url": small_url(r, s), "image_source": SOURCES[s],
                         "iiif_service": r["iiif_service"] if s == 1 else "",
                         "iiif_manifest": f"https://iiif.europeana.eu/presentation{r['id']}/manifest" if s == 1 else ""})
-    np.savez_compressed(emb_file, ids=np.array([rows[i]["id"] for i in keep]), vectors=vectors[keep])
+    with open(tmp_emb, "wb") as f:
+        np.savez_compressed(f, ids=np.array([rows[i]["id"] for i in keep]), vectors=vectors[keep])
+    os.replace(tmp_emb, emb_file)                                # a part only exists once it is complete
+    os.replace(tmp_meta, meta_file)
     print(f"Saved {emb_file} and {meta_file}")
 
 
