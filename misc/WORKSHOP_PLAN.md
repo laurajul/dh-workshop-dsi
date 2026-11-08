@@ -47,7 +47,7 @@ Compare a participant's own query against a shared, precomputed dataset.
 | `embed` | cluster, one job per `--shard` | streams each small image into CLIP and keeps only the vector and the URL that worked; no images are stored |
 | `merge` | anywhere | joins the shard files into `metadata.csv` and `embeddings/clip_vit_b32.npz` |
 
-Cluster steps: copy `harvest/records.jsonl` and `ViT-B-32.pt` to the cluster, run `embed` as an array job (the docstring has a SLURM example; `SLURM_ARRAY_TASK_ID` selects the shard), copy `embeddings/parts/` and `metadata_parts/` back, run `merge`.
+Cluster: `scripts/slurm/` has batch scripts for all three heavy stages (`harvest.sbatch`, `embed.sbatch` submitted by `submit_embed.sh`, `merge.sbatch`) and a README with setup, a 10,000-image test run and recovery steps.
 
 Selection: open-licence image records with a media file. Options: `--budget-gb`, or the manual caps `--per-institution` (0 = all), `--big-threshold`, `--min-items`, `--small-cap`; `--max-institutions` for tests; `--float32`.
 

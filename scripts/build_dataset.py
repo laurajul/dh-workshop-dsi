@@ -183,11 +183,13 @@ def selection(args, key):
     if args.budget_gb:
         rows = int(args.budget_gb * 1e9 / (META_BYTES_PER_ROW + EMB_BYTES_PER_ROW) * args.margin)
         eligible = {n: c for n, c in counts.items() if c >= args.min_items}
+        if args.max_institutions:                                 # for tests: the N largest institutions
+            eligible = dict(sorted(eligible.items(), key=lambda kv: -kv[1])[:args.max_institutions])
         args.cap = water_fill(list(eligible.values()), rows)
-        chosen = {n: min(c, args.cap) for n, c in eligible.items()}
-        if args.max_institutions:
-            chosen = dict(sorted(chosen.items(), key=lambda kv: -kv[1])[:args.max_institutions])
-        return counts, chosen
+        if args.cap < 1:
+            raise SystemExit(f"The budget ({args.budget_gb:g} GB, about {rows:,} records) is too small for one record from each of "
+                             f"{len(eligible):,} institutions. Raise --budget-gb, or limit --max-institutions / raise --min-items.")
+        return counts, {n: min(c, args.cap) for n, c in eligible.items()}
     args.cap = None
     for name, n in counts.items():
         if n >= args.big_threshold:
@@ -264,6 +266,7 @@ def cmd_harvest(args):
     rec_file, done_file = out / "harvest" / "records.jsonl", out / "harvest" / "done_institutions.txt"
     done = set(done_file.read_text(encoding="utf-8").splitlines()) if done_file.exists() else set()
     _, chosen = selection(args, key)
+    assert all(c > 0 for c in chosen.values()), "internal error: an institution has a limit of 0"
     todo = [(n, c) for n, c in sorted(chosen.items(), key=lambda kv: -kv[1]) if n not in done]
     print(f"{len(chosen):,} institutions selected, {len(done):,} already done, {len(todo):,} to harvest")
 

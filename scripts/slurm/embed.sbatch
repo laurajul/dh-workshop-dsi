@@ -41,9 +41,12 @@ WORKERS="${WORKERS:-32}"
 cd "$REPO"
 [ -f "$DATA/harvest/records.jsonl" ] || { echo "No $DATA/harvest/records.jsonl: run harvest.sbatch first." >&2; exit 1; }
 [ -f "$DATA/models/ViT-B-32.pt" ] || { echo "Copy the CLIP weights to $DATA/models/ViT-B-32.pt first (from models/CLIP/)." >&2; exit 1; }
-curl -sfI --max-time 20 https://api.europeana.eu/thumbnail/v2/url.json >/dev/null 2>&1 \
+http_code="$(curl -s -o /dev/null --max-time 20 -w '%{http_code}' https://api.europeana.eu/thumbnail/v2/url.json || true)"
+[ "$http_code" != "000" ] && [ -n "$http_code" ] \
     || echo "warning: could not reach api.europeana.eu from this node (compute nodes may have no internet)" >&2
 
-echo "embed: shard $SHARD of $SHARDS on $(hostname), $(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)"
+gpu="$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)" || gpu=""
+case "$gpu" in ""|*failed*|*NVIDIA-SMI*) gpu="no GPU found (running on the CPU)";; esac
+echo "embed: shard $SHARD of $SHARDS on $(hostname), $gpu"
 "$PYTHON" scripts/build_dataset.py embed --out "$DATA" --models "$DATA/models" \
     --shard "$SHARD" --shards "$SHARDS" --workers "$WORKERS" --thumb-rate "$THUMB_RATE"
