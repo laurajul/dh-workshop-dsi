@@ -3,14 +3,17 @@
 #SBATCH --gpus=H100:1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
-#SBATCH --time=24:00:00
+#SBATCH --time=08:00:00
 #SBATCH --output=/scratch/%u/logs/%x_%A.out
 #SBATCH --error=/scratch/%u/logs/%x_%A.out
 #
-# The whole dataset pipeline in ONE job, in order:
+# The whole dataset pipeline in ONE job. Default selection: Europeana's Art collection, images only (no books), cut to
+# half its size (about 630,000 images, about 1 GB): the 33 largest institutions are capped at about 8,000 images each,
+# all others are taken completely. Other selections: set THEME / BUDGET_GB / MAX_GB below.
+# Steps, in order:
 #   0. CLIP weights   downloaded to $DATA/models/ViT-B-32.pt if not present
-#   1. harvest        metadata records from the Europeana Search API          (about 30 min for the Art selection)
-#   2. embed          every shard in turn: images streamed into CLIP, vectors kept   (about 7 h at 50 requests/s)
+#   1. harvest        metadata records from the Europeana Search API          (about 15 minutes)
+#   2. embed          every shard in turn: images streamed into CLIP, vectors kept   (about 3.5 h at 50 requests/s)
 #   3. merge          metadata.csv + embeddings/clip_vit_b32.npz, trimmed to MAX_GB
 #
 # Every step skips what is already done (finished institutions, finished shards, existing weights), so if the job
@@ -25,7 +28,9 @@
 #
 # Settings (environment variables, all optional):
 #   DATA=/scratch/$USER/dsi-workshop   output folder
-#   BUDGET_GB=9.5  MARGIN=1.1          selection size; MAX_GB=9.5 is the final size limit
+#   THEME=art                          Europeana thematic collection ("" = all themes; use a fresh DATA folder when you change it)
+#   BUDGET_GB=0.96  MARGIN=1.0         selection size for metadata.csv + embeddings; MAX_GB=0.96 is the final size limit
+#                                      (BUDGET_GB=9.5 MARGIN=1.1 MAX_GB=9.5 would be the 9.5 GB selection; the full Art collection is 1.9 GB)
 #   SHARD_SIZE=50000                   images per shard
 #   THUMB_RATE=50                      requests per second to Europeana's thumbnail service (total, one job)
 #   WORKERS=32                         download/preprocess workers
@@ -42,9 +47,10 @@ PYTHON="${PYTHON:-python}"
 
 REPO="${REPO:-${SLURM_SUBMIT_DIR:-$PWD}}"
 DATA="${DATA:-/scratch/${USER}/dsi-workshop}"
-BUDGET_GB="${BUDGET_GB:-9.5}"
-MARGIN="${MARGIN:-1.1}"
-MAX_GB="${MAX_GB:-9.5}"
+THEME="${THEME-art}"                      # THEME="" means all themes
+BUDGET_GB="${BUDGET_GB:-0.96}"
+MARGIN="${MARGIN:-1.0}"
+MAX_GB="${MAX_GB:-0.96}"
 SHARD_SIZE="${SHARD_SIZE:-50000}"
 THUMB_RATE="${THUMB_RATE:-50}"
 WORKERS="${WORKERS:-32}"
@@ -69,7 +75,7 @@ seconds_left() {
     if [ -z "${c:-}" ]; then echo $(( 10#$d * 86400 + 10#${a:-0} * 60 + 10#${b:-0} )); else echo $(( 10#$d * 86400 + 10#$a * 3600 + 10#$b * 60 + 10#$c )); fi
 }
 
-echo "[$(stamp)] dsi_pipeline: repo=$REPO data=$DATA budget=${BUDGET_GB} GB (final limit ${MAX_GB} GB)"
+echo "[$(stamp)] dsi_pipeline: repo=$REPO data=$DATA theme=${THEME:-all} budget=${BUDGET_GB} GB (final limit ${MAX_GB} GB)"
 http_code="$(curl -s -o /dev/null --max-time 20 -w '%{http_code}' https://api.europeana.eu/thumbnail/v2/url.json || true)"
 if [ -z "$http_code" ] || [ "$http_code" = "000" ]; then
     echo "error: api.europeana.eu is not reachable from this node (the harvest and the image requests need internet access)." >&2; exit 1
@@ -87,9 +93,9 @@ fi
 # --- 1. harvest ------------------------------------------------------------------------------------------
 echo "[$(stamp)] 1/3 harvest (skips institutions that are already done)"
 # shellcheck disable=SC2086
-$BUILD plan    --out "$DATA" --budget-gb "$BUDGET_GB" --margin "$MARGIN" ${HARVEST_ARGS:-}
+$BUILD plan    --out "$DATA" --theme "$THEME" --budget-gb "$BUDGET_GB" --margin "$MARGIN" ${HARVEST_ARGS:-}
 # shellcheck disable=SC2086
-$BUILD harvest --out "$DATA" --budget-gb "$BUDGET_GB" --margin "$MARGIN" ${HARVEST_ARGS:-}
+$BUILD harvest --out "$DATA" --theme "$THEME" --budget-gb "$BUDGET_GB" --margin "$MARGIN" ${HARVEST_ARGS:-}
 
 # --- 2. embed, shard by shard ----------------------------------------------------------------------------
 records="$DATA/harvest/records.jsonl"

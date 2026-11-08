@@ -7,7 +7,7 @@ The default selection is Europeana's **Art** thematic collection, images only (n
 
 ## Two ways to run it
 
-**One job (`pipeline.sbatch`)**: everything in order, in a single GPU job: CLIP weights are downloaded if missing, then harvest, embed (shard after shard) and merge. Simplest to start and to reason about; it takes about 8 hours at the default 50 requests/s (the `--time` is 24 h; set it to what your cluster allows). Every step skips what is already done, so a job that runs out of time is continued by submitting the same command again. Before a shard that would not finish, the job stops cleanly (`MIN_SHARD_MINUTES`, default 75); with `AUTO_RESUBMIT=1` it resubmits itself.
+**One job (`pipeline.sbatch`)**: everything in order, in a single GPU job: CLIP weights are downloaded if missing, then harvest, embed (shard after shard) and merge. Simplest to start and to reason about; its defaults are the **half-size Art selection** (about 630,000 images, about 1 GB; `THEME=art BUDGET_GB=0.96 MARGIN=1.0 MAX_GB=0.96`), which takes about 4 hours at 50 requests/s (`--time` is 8 h). For the full Art collection set `BUDGET_GB=9.5 MARGIN=1.1 MAX_GB=9.5` (about 8 hours, raise `--time`). The separate stage scripts below still default to the 9.5 GB settings, so export those variables when you use them. Every step skips what is already done, so a job that runs out of time is continued by submitting the same command again. Before a shard that would not finish, the job stops cleanly (`MIN_SHARD_MINUTES`, default 75); with `AUTO_RESUBMIT=1` it resubmits itself.
 
 ```bash
 mkdir -p /scratch/$USER/logs
