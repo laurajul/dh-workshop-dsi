@@ -1,0 +1,68 @@
+# Paper figure style: bold Noto Sans, bold outlines, light grey grids.
+# Usage: plt.style.use("paper_style.mplstyle")   (or import paper_style)
+#
+# ---------------------------------------------------------------------------
+# DIAGRAM CONVENTIONS (boxes, nested structures, schematics)
+# These rules can't all be set as rcParams. They are here so that anyone
+# (or any tool) drawing a diagram with this style follows them.
+#
+#   1. Fills are always white. No tinted, transparent or coloured fills.
+#   2. One primary colour per level of the hierarchy, used at full strength
+#      for that level's outline, heading AND subtitle text.
+#      Assign them in the order of the colour cycle, outermost level first:
+#        level 1 silver -> 2 rosybrown -> 3 coral -> 4 crimson -> 5 blueviolet
+#   3. Outlines are bold: about 2.2 pt, solid, with rounded corners.
+#      Elements that point to others rather than contain them (references,
+#      groupings, overlays) get a dashed outline in their level colour.
+#   4. Text is bold Noto Sans. Headings are larger, and subtitles smaller in
+#      the same colour. No extra accent colour (e.g. maroon) inside diagrams.
+#   5. Labels are short and literal ("origin: Yale", not "pixels from Yale").
+#      Use generic names with examples underneath ("Item 1" / "e.g. book").
+#   6. Hide axes and grid for diagrams (ax.set_axis_off(); ax.grid(False)).
+# ---------------------------------------------------------------------------
+
+font.family: Noto Sans, Noto Sans CJK JP, DejaVu Sans
+font.weight: bold
+font.size: 10
+
+axes.labelweight: bold
+axes.titleweight: bold
+axes.labelcolor: maroon
+axes.titlecolor: black
+axes.edgecolor: black
+axes.linewidth: 1.5
+axes.grid: True
+axes.axisbelow: True
+axes.spines.top: False
+axes.spines.right: False
+axes.prop_cycle: cycler('color', ['silver', 'rosybrown', 'coral', 'crimson', 'blueviolet'])
+
+grid.color: lightgray
+grid.linewidth: 0.8
+grid.linestyle: -
+
+xtick.color: black
+ytick.color: black
+xtick.major.width: 1.5
+ytick.major.width: 1.5
+xtick.labelsize: 9
+ytick.labelsize: 9
+
+hatch.linewidth: 1.0
+# Shapes (boxes, patches): white fill, bold visible outline by default
+patch.facecolor: white
+patch.edgecolor: black
+patch.force_edgecolor: True
+patch.linewidth: 2.2
+lines.linewidth: 1.5
+
+legend.frameon: True
+legend.edgecolor: black
+legend.fancybox: True
+legend.framealpha: 1.0
+legend.title_fontsize: 11
+
+figure.facecolor: white
+savefig.bbox: tight
+pdf.fonttype: 42
+ps.fonttype: 42
