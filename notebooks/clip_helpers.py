@@ -22,14 +22,21 @@ from PIL import Image
 NOTEBOOK_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = NOTEBOOK_DIR.parent
 
-# The shared dataset (metadata.csv + embeddings/) lives in ~/shared/DSI-Workshop.
-# Set the environment variable DSI_WORKSHOP_DIR to use a different location.
-# If ~/shared/DSI-Workshop does not exist, fall back to the copy inside the project.
-_SHARED_DATA = Path.home() / "shared" / "DSI-Workshop"
-DATA = Path(os.environ.get(
-    "DSI_WORKSHOP_DIR",
-    _SHARED_DATA if _SHARED_DATA.exists() else PROJECT_ROOT / "data" / "DSI-Workshop",
-))
+# The shared dataset (metadata.csv + embeddings/ + models/) is looked for, in this order:
+#   1. the folder in the environment variable DSI_WORKSHOP_DIR
+#   2. ~/shared/DSI-Workshop
+#   3. ~/data (the link that setup.sh makes to the shared folder on the workshop server)
+#   4. data/DSI-Workshop inside the project
+def _find_data():
+    if os.environ.get("DSI_WORKSHOP_DIR"):
+        return Path(os.environ["DSI_WORKSHOP_DIR"])
+    for d in (Path.home() / "shared" / "DSI-Workshop", Path.home() / "data"):
+        if (d / "metadata.csv").exists():
+            return d
+    return PROJECT_ROOT / "data" / "DSI-Workshop"
+
+
+DATA = _find_data()
 CACHE_DIR = PROJECT_ROOT / "data" / "image_cache"      # downloaded small images are kept here
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -38,6 +45,11 @@ def manifest_url(record_id):
     # Europeana publishes a IIIF manifest for every record, at an address built from the record ID.
     dataset, local = record_id.strip("/").split("/", 1)
     return f"https://iiif.europeana.eu/presentation/{dataset}/{local}/manifest"
+
+
+def europeana_url(record_id):
+    # The page of a record on europeana.eu, built from its ID ("/916118/S_TEK_photo_TEKA0214991").
+    return "https://www.europeana.eu/en/item/" + record_id.strip("/")
 
 
 def bar_table(pairs, total, title):
@@ -105,8 +117,9 @@ class Collection:
             num = f"<b style='color:#BC8F8F'>#{n}</b> " if numbered else ""
             score = f"<br><b>similarity {scores[i]:.3f}</b>" if scores is not None else ""
             yr = f", {r['year']}" if r["year"] else ""
+            link = f"<br><a href='{europeana_url(r['id'])}' target='_blank'>Europeana</a> · row {int(i)}"
             cards += (f"<figure style='margin:0;width:{size}px;font:11px sans-serif'>{self.thumb(i, size)}"
-                      f"<figcaption>{num}<b>{html.escape(r['title'][:60])}</b><br>{html.escape(r['institution'][:38])}{yr}{score}</figcaption></figure>")
+                      f"<figcaption>{num}<b>{html.escape(r['title'][:60])}</b><br>{html.escape(r['institution'][:38])}{yr}{score}{link}</figcaption></figure>")
         display(HTML(f"<div style='display:flex;gap:12px;flex-wrap:wrap'>{cards}</div>"))
         if keep:                                                   # a button that saves the results for the presentation
             from keep_helpers import contact_sheet, keep_button
@@ -169,6 +182,7 @@ class Collection:
         print(f"request:  {how}\n          {url}")
         print(f"small version used for the embedding: {small.size[0]} x {small.size[1]}, {small_bytes / 1024:,.0f} KB")
         print(f"requested version:             {big.size[0]} x {big.size[1]}, transferred {len(data) / 1024:,.0f} KB")
+        print("Europeana:  ", europeana_url(r["id"]))
         if r["landing_page"]:
             print("object page:", r["landing_page"])
 

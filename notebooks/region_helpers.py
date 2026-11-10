@@ -26,7 +26,7 @@ import requests
 from IPython.display import HTML, display
 from PIL import Image, ImageDraw
 
-from clip_helpers import CACHE_DIR, PROJECT_ROOT
+from clip_helpers import CACHE_DIR, PROJECT_ROOT, europeana_url
 
 Image.MAX_IMAGE_PIXELS = None
 session = requests.Session()
@@ -220,8 +220,9 @@ def cards_html(coll, idx, scores=None, size=110):
     for i in idx:
         r = coll.meta[int(i)]
         sc = f"<br>{scores[i]:.3f}" if scores is not None else ""
+        link = f"<br><a href='{europeana_url(r['id'])}' target='_blank' title='row {int(i)} of metadata.csv'>#{int(i)} Europeana</a>"
         out += (f"<figure style='margin:0;width:{size}px;font:10px sans-serif'>{coll.thumb(int(i), size)}"
-                f"<figcaption title='{html.escape(r['title'][:120], quote=True)}'>{html.escape(r['institution'][:22])}{sc}</figcaption></figure>")
+                f"<figcaption title='{html.escape(r['title'][:120], quote=True)}'>{html.escape(r['institution'][:22])}{sc}{link}</figcaption></figure>")
     return out
 
 

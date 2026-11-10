@@ -55,7 +55,7 @@ Everything this workshop draws on. The first sections are the material the works
 - Record API (`api.europeana.eu/record/v2`). https://pro.europeana.eu/page/apis
 - Europeana Data Model (EDM) documentation. https://pro.europeana.eu/page/edm-documentation
 - Europeana IIIF Presentation endpoint. https://iiif.europeana.eu/presentation/
-- Items used as examples: Rijksmuseum drawing https://www.europeana.eu/en/item/90402/RP_T_1904_190 (manifest https://iiif.europeana.eu/presentation/90402/RP_T_1904_190/manifest), and the Salzburg Museum banknote (Waizenkirchen, 20 Heller) https://www.europeana.eu/en/item/1387/https___id_kulturpool_at_013cf817_e57a_4289_96b3_2a068c7fe756_cho
+- Items used as examples: Rijksmuseum drawing https://www.europeana.eu/en/item/90402/RP_T_1904_190 (manifest https://iiif.europeana.eu/presentation/90402/RP_T_1904_190/manifest), and the advertising stamp (*reklammärke*, 1939, *Ljusäkta Fiona Färger*) of the Malmö Museum (CC BY 4.0) http://carlotta.malmo.se/carlotta-mmus/web/object/178916
 
 ## CLIP (notebook 3)
 
