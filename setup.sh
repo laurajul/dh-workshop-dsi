@@ -3,11 +3,14 @@
 #   1. clones the workshop repository into ~/DH-Workshop
 #   2. creates a uv environment in ~/shared and installs requirements.txt
 #   3. registers a Jupyter kernel called "dh-workshop"
+#   4. links the shared data folder to ~/data (only if not already present)
 set -euo pipefail
 
 REPO_URL="https://github.com/laurajul/DH-Workshop"
 REPO_DIR="$HOME/DH-Workshop"
 SHARED_DIR="$HOME/shared"
+DATA_SRC="/srv/shared/DSI-Workshop"
+DATA_LINK="$HOME/data"
 
 # --- checks -----------------------------------------------------------------
 if ! command -v uv >/dev/null 2>&1; then
@@ -51,6 +54,19 @@ uv add -r "$REQ_FILE"
 # --- 3. Jupyter kernel -------------------------------------------------------
 echo ">>> Registering Jupyter kernel 'dh-workshop' ..."
 uv run python -m ipykernel install --user --name=dh-workshop --display-name "dh-workshop"
+
+# --- 4. link shared data folder to ~/data -------------------------------------
+# Never overwrite or nest anything: only create the link if nothing is at ~/data.
+if [ -L "$DATA_LINK" ]; then
+    echo ">>> $DATA_LINK is already a symlink (-> $(readlink "$DATA_LINK")), leaving it as is."
+elif [ -e "$DATA_LINK" ]; then
+    echo ">>> WARNING: $DATA_LINK already exists and is not a symlink, leaving it untouched." >&2
+elif [ ! -d "$DATA_SRC" ]; then
+    echo ">>> WARNING: $DATA_SRC does not exist, cannot create $DATA_LINK." >&2
+else
+    echo ">>> Linking $DATA_SRC -> $DATA_LINK ..."
+    ln -s "$DATA_SRC" "$DATA_LINK"
+fi
 
 echo
 echo "Setup complete. Start your notebooks with the 'dh-workshop' kernel."
