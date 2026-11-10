@@ -1,6 +1,6 @@
 """Insert a visual divider cell before every slide of a notebook (idempotent).
 
-Usage: python scripts/add_slide_dividers.py notebooks/01_iiif_overview.ipynb [default-label]
+Usage: python scripts/add_slide_dividers.py notebooks/01_intro_iiif_europeana.ipynb [default-label]
 
 A slide that happens in the browser (not in the notebook) is marked by setting "browser": true in the cell
 metadata; its divider then shows a BROWSER pill (blueviolet, from misc/reference/paper_style.mplstyle).
@@ -14,7 +14,8 @@ import re
 import sys
 
 # Colours from misc/reference/paper_style.mplstyle (matplotlib names: rosybrown, coral, silver)
-COLORS = {"PART A": "#BC8F8F", "PART B": "#FF7F50", "APPENDIX": "#C0C0C0"}
+COLORS = {"PART A": "#BC8F8F", "PART B": "#FF7F50", "APPENDIX": "#C0C0C0",
+          "WELCOME": "#708090", "IIIF": "#BC8F8F", "EUROPEANA": "#FF7F50"}   # section banners of the intro notebook
 
 
 PILL = "#8A2BE2"   # matplotlib "blueviolet", the fifth colour of paper_style.mplstyle

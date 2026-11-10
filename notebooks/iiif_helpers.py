@@ -1,4 +1,4 @@
-"""Helper functions for notebook 01 (IIIF).
+"""Helper functions for the intro notebook (IIIF section).
 
 The notebook cells only call these functions, so that the cells shown during the presentation stay short.
 Everything here is read-only: it fetches data from public IIIF servers and displays it.
@@ -268,3 +268,123 @@ def show_mirador_many(manifest_urls, height=620):
     doc = mirador_many(manifest_urls, height)
     display(HTML(f"<iframe srcdoc=\"{html.escape(doc, quote=True)}\" "
                  f"style='width:100%;height:{height}px;border:1px solid #ccc'></iframe>"))
+
+
+# ---------------------------------------------------------------- reading a manifest
+
+def show_outline(manifest, depth=8, skip=("@context", "label", "metadata", "logo", "seeAlso", "within", "description", "attribution",
+                                          "license", "rights", "provider", "homepage", "thumbnail", "requiredStatement", "summary")):
+    # Print how a manifest is nested: its keys, the length of each list, and the first element of each list.
+    # It is the same tree you see when you open the raw JSON in a browser and unfold it.
+    lines = []
+
+    def walk(x, name, indent, d):
+        pad = "  " * indent
+        if isinstance(x, dict):
+            kind = x.get("@type") or x.get("type")
+            lines.append(f"{pad}{name}" + (f"   ({kind})" if isinstance(kind, str) else ""))
+            if d:
+                for k, v in x.items():
+                    if k not in skip and isinstance(v, (dict, list)):
+                        walk(v, k, indent + 1, d - 1)
+        elif isinstance(x, list):
+            lines.append(f"{pad}{name}   [{len(x)} items]")
+            if x and d and isinstance(x[0], (dict, list)):
+                walk(x[0], "[0]", indent + 1, d - 1)
+
+    walk(manifest, "manifest", 0, depth)
+    print("\n".join(lines))
+
+
+# ---------------------------------------------------------------- finding a manifest
+
+def _is_manifest(url):
+    # True if the URL answers with a IIIF Presentation manifest (v2 or v3).
+    try:
+        r = session.get(url, timeout=30, headers={"Accept": "application/json"})
+        j = r.json() if r.ok else {}
+    except Exception:
+        return False
+    ctx = j.get("@context", "")
+    ctx = " ".join(ctx) if isinstance(ctx, list) else str(ctx)
+    return "iiif.io/api/presentation" in ctx and (j.get("type") or j.get("@type", "")) in ("Manifest", "sc:Manifest")
+
+
+def find_manifest(url, verbose=True):
+    """Find the IIIF manifest of an object page, in two steps.
+    1. Some platforms build the manifest address from the page address or the record ID: Europeana, e-codices, Fragmentarium.
+    2. Otherwise the page is searched for addresses that contain 'manifest'.
+    Every candidate is requested and must really answer with a manifest. Returns the URL, or None."""
+    import re
+    rules = [
+        (r"europeana\.eu/(?:[a-z]{2}/)?item/(\d+)/([^/?#]+)", lambda m: f"https://iiif.europeana.eu/presentation/{m[1]}/{m[2]}/manifest", "Europeana: built from the record ID"),
+        (r"e-codices\.(?:unifr\.)?ch/(?:[a-z]{2}/)?(?:list/one/)?([a-z]+)/(\d{4})", lambda m: f"https://www.e-codices.unifr.ch/metadata/iiif/{m[1]}-{m[2]}/manifest.json", "e-codices: built from the shelfmark"),
+        (r"fragmentarium\.ms/(?:overview|view/object|view/page)/(F-[a-z0-9]+)", lambda m: f"https://fragmentarium.ms/metadata/iiif/{m[1]}/manifest.json", "Fragmentarium: built from the record ID"),
+    ]
+    for pattern, build, how in rules:
+        m = re.search(pattern, url)
+        if m and _is_manifest(build(m)):
+            if verbose:
+                print(f"found ({how}):\n{build(m)}")
+            return build(m)
+    try:
+        page = session.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0 dh-workshop"})
+        text = page.text + " ".join(page.headers.get("Link", "").split())
+    except Exception as e:
+        text = ""
+        if verbose:
+            print(f"could not read the page ({type(e).__name__})")
+    seen = []
+    for cand in re.findall(r"https?://[^\s\"'<>\\]*manifest[^\s\"'<>\\]*", text.replace("\\/", "/")):
+        cand = html.unescape(cand).rstrip(").,;")
+        if cand not in seen:
+            seen.append(cand)
+            if _is_manifest(cand):
+                if verbose:
+                    print(f"found (the page mentions it):\n{cand}")
+                return cand
+    if verbose:
+        print("no manifest found by pattern or in the page text. Look on the page for a IIIF logo or a link called 'IIIF' / 'Manifest' "
+              "(often in a share, download or export menu), or open the developer tools, Network tab, reload, and filter by 'manifest'.")
+    return None
+
+
+def chain_urls(manifest_url, canvas=0):
+    """The URLs that lead from a manifest to the pixels of one image, for any Presentation 2 or 3 manifest:
+    manifest (Presentation API) -> canvas -> image file -> image service (Image API) -> info.json -> a region request.
+    Returns a list of (label, url, note, can_open); the service entries are None if the image is a plain file."""
+    m = get_json(manifest_url)
+    if "sequences" in m:                                                    # Presentation 2
+        cv = m["sequences"][0]["canvases"][canvas]
+        res = cv["images"][0]["resource"]
+        cv_id, file_url, svc = cv["@id"], res["@id"], res.get("service")
+    else:                                                                   # Presentation 3
+        cv = m["items"][canvas]
+        body = cv["items"][0]["items"][0]["body"]
+        body = body[0] if isinstance(body, list) else body
+        cv_id, file_url, svc = cv["id"], body["id"], body.get("service")
+    svc = svc[0] if isinstance(svc, list) else svc
+    base = (svc.get("@id") or svc.get("id")).rstrip("/") if svc else None
+    rows = [("1  Presentation API: the manifest", manifest_url, "One object, one URL. It lists the canvases.", True),
+            (f"2  canvas {canvas + 1}: a virtual page", cv_id, "An identifier inside the manifest. Not always a working address.", False),
+            ("3  the image file named in the manifest", file_url, "What the painting annotation points to.", True)]
+    if base:
+        info = get_json(base + "/info.json")
+        w, h = info["width"], info["height"]
+        rows += [("4  Image API: the image service (base URL)", base, "Found INSIDE the manifest (canvas, annotation, body, service, id). It cannot be constructed.", True),
+                 ("5  Image API: info.json", base + "/info.json", f"Size of the original: {w} x {h} px. What the server can do.", True),
+                 ("6  Image API: a request, here the central quarter", f"{base}/{w // 4},{h // 4},{w // 2},{h // 2}/!400,400/0/default.jpg", "{service}/{region}/{size}/{rotation}/{quality}.{format}", True)]
+    else:
+        rows.append(("4  no image service", "", "This image is a plain file: it can only be requested as a whole.", False))
+    return rows
+
+
+def show_chain(manifest_url, canvas=0):
+    # Follow one image from its manifest to a region request, and show every URL on the way (see chain_urls).
+    rows = chain_urls(manifest_url, canvas)
+    fields = [(l, u, n, o) for l, u, n, o in rows if u]
+    if not rows[-1][1]:                                                     # no image service: say where the chain ends
+        fields.append(widgets.HTML("<div style='margin:8px 0;font:14px sans-serif;color:#b00020'><b>4  no image service</b><br>"
+                                   "<span style='color:#666;font-size:12px'>The manifest names a plain image file. The Presentation API works, "
+                                   "but there is no Image API behind it: no regions, no tiles, no info.json.</span></div>"))
+    url_panel("From the manifest to the pixels", fields)

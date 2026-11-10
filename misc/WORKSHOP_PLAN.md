@@ -10,26 +10,24 @@ Working brief for the restructured workshop. Notebooks are numbered in teaching 
 
 ## Notebooks
 
-### 01 `01_iiif_overview.ipynb` (done)
-What IIIF is and what the manifest affords.
-- Manifest, canvases, ranges; images attached to canvases by `painting` annotations.
-- Image API: any size, any region, rotation, quality; tiles and deep zoom.
-- Region annotations (`canvas#xywh=`).
-- Mirador embedded in the notebook.
-- Case study: Fragmentarium's reconstruction of a Book of Hours from many owners.
+### 01 `01_intro_iiif_europeana.ipynb`
+One introductory notebook with two sections (it replaces the former `00_welcome`, `01_iiif_overview` and `02_europeana_api_and_data`). A short welcome and setup check come first.
 
-### 02 `02_europeana_api_and_data.ipynb`
-From IIIF platforms to the aggregator.
-- Transition: how data reaches Europeana (`europeana_flow.svg`): metadata via OAI-PMH/EDM, directly / via aggregator / via project; IIIF as the parallel route for images.
-- API basics: Search API, Record API, key.
-- Overview of all institutions: table with item counts per type (image, text, sound, video, 3D), Art theme, and how many records link a IIIF manifest. Also by aggregator and by country.
-- Preview of a single institution: type mix, rights, time span, main creators, sample images.
-- What the API does that the website's filters do not: counts and cross-tabulations across fields, year histograms, combined field/range filters, bulk export of metadata with cursor paging.
-- A record in detail and its IIIF manifest.
+**IIIF** (starts in the browser)
+- Murten terapixel panorama first: participants get the URL and the steps to open the developer tools (Network tab, filter Img, pan and zoom) and read the tile requests. The idea of starting from the Network tab follows the IIIF intro videos of the ZB Zürich (ZB-Lab).
+- What IIIF is, why it matters, where to find it, how to use it.
+- The Book of Hours (Fragmentarium F-mp8l, 61 canvases, 16 ranges): the raw manifest JSON in the browser and as a printed outline (`show_outline`), with the schema of manifest, canvases, images and ranges. e-manuscripta link and a slot for its manifest URL.
+- An annotated manuscript on e-rara (text layer, the story of the woman and her defender: instructor notes still to complete).
+- How it works behind the scenes: Presentation API, Image API URLs, tiles, annotations, Mirador.
+- Hands-on: change an image by editing its URL.
 
-Keyword search is kept short, because the Europeana website already does it well. The emphasis is on aggregate questions and on exporting metadata as a dataset.
+**Europeana** (distant reading of the aggregator)
+- How data reaches Europeana, the Search API, who contributes, routes and countries, which institutions name a IIIF manifest, one institution in detail, filters beyond the website, one record and its IIIF manifest.
+- Hands-on: find an object with a IIIF manifest.
 
-### 03 `03_clip_search.ipynb`
+Appendix: the details of both sections (Switzerland, structure of a manifest, Image API, facets, metadata export). Keyword search is kept short, because the Europeana website already does it well. The emphasis is on aggregate questions and on exporting metadata as a dataset.
+
+### 03 `03_clip_search.ipynb`  (semantic search; how to cover it is still open)
 Compare a participant's own query against a shared, precomputed dataset.
 - Load `metadata.csv` and the embeddings from `data/DSI-Workshop/`, the CLIP model from `data/DSI-Workshop/models/`.
 - Text query to ranked images; filters as boolean masks (institution, country, period); where do the results come from; image query ("more like this" or an uploaded file).

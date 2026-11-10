@@ -22,8 +22,14 @@ from PIL import Image
 NOTEBOOK_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = NOTEBOOK_DIR.parent
 
-# The shared dataset. Set the environment variable DSI_WORKSHOP_DIR to use a different location.
-DATA = Path(os.environ.get("DSI_WORKSHOP_DIR", PROJECT_ROOT / "data" / "DSI-Workshop"))
+# The shared dataset (metadata.csv + embeddings/) lives in ~/shared/DSI-Workshop.
+# Set the environment variable DSI_WORKSHOP_DIR to use a different location.
+# If ~/shared/DSI-Workshop does not exist, fall back to the copy inside the project.
+_SHARED_DATA = Path.home() / "shared" / "DSI-Workshop"
+DATA = Path(os.environ.get(
+    "DSI_WORKSHOP_DIR",
+    _SHARED_DATA if _SHARED_DATA.exists() else PROJECT_ROOT / "data" / "DSI-Workshop",
+))
 CACHE_DIR = PROJECT_ROOT / "data" / "image_cache"      # downloaded small images are kept here
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 

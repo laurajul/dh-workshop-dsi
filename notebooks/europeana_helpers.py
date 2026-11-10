@@ -1,4 +1,4 @@
-"""Helper functions for notebook 02 (Europeana).
+"""Helper functions for the intro notebook (Europeana section).
 
 The notebook cells only call these functions, so that the cells shown during the presentation stay short.
 Everything here is read-only: it queries the public Europeana APIs. The only files written are the
