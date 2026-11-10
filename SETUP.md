@@ -17,7 +17,7 @@ If it stops with an error, send the message to the workshop team.
 
 ## In Google Colab
 
-Use the **Open in Colab** buttons in the [README](README.md). The first cell of each notebook clones this repository, so all paths are the same as on the server. In `03_clip_search` you also mount your Google Drive, add the shared data folder to it as a shortcut (the link is in the notebook), and a cell links it to `~/data`.
+Use the **Open in Colab** button in the [README](README.md): one notebook with the whole workshop. Run the setup cells at the top once, from top to bottom. They clone this repository (so all paths are the same as on the server), install CLIP, mount your Google Drive, and link the shared data folder (add it to your Drive as a shortcut first, the link is in the notebook) to `~/data`. If Colab restarts the runtime, run them again.
 
 ## On your own computer
 
@@ -34,4 +34,4 @@ The dataset is not in the repository. Get the `DSI-Workshop` folder (with `metad
 
 ## Handing in
 
-Files for the final task go in a folder with your name on the workshop's Switch drive. The link is in `0Z_final_task.ipynb`.
+Files for the final task go in a folder with your name on the workshop's Switch drive. The link is in `04_final_task.ipynb`.

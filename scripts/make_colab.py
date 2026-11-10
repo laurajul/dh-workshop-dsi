@@ -1,17 +1,17 @@
-"""Make the Google Colab versions of the workshop notebooks.
+"""Make the Google Colab version of the workshop: ONE notebook with all parts.
 
     python scripts/make_colab.py
 
-Reads notebooks/01_iiif, 02_europeana, 03_clip_search and 0Z_final_task and writes colab/<same name>.ipynb.
-The content is the same; a few cells are added at the top: clone the repository (so every path is the same as on the
-workshop server), and, for notebook 03, mount Google Drive and link the shared data folder to ~/data.
+Reads notebooks/01_iiif, 02_europeana, 03_clip_search and 04_final_task and writes colab/workshop.ipynb.
+The content is the same, in that order. A setup section is added once at the top: clone the repository (so every path
+is the same as on the workshop server), install CLIP, mount Google Drive and link the shared data folder to ~/data.
 Run it again whenever the notebooks change.
 """
 import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-NAMES = ["01_iiif", "02_europeana", "03_clip_search", "0Z_final_task"]
+PARTS = ["01_iiif", "02_europeana", "03_clip_search", "04_final_task"]
 REPO = "https://github.com/laurajul/dh-workshop-dsi.git"
 
 
@@ -39,7 +39,7 @@ def replace_in(cells, cid, old, new):
 
 
 CLONE = [
-    md("colab-md", "**Google Colab version.** Run the cell below first. It gets the workshop code, so that every path is the same as on the workshop server. Otherwise this notebook is the same."),
+    md("colab-md", "**Google Colab version: the whole workshop in one notebook.** Run the setup cells below once, from top to bottom (about two minutes). They get the workshop code, so that every path is the same as on the workshop server, and connect your Google Drive for the data of part 3. Then go on with the parts in order. If Colab restarts the runtime, run the setup cells again."),
     code("colab-clone", f'''# Colab setup: run this cell first.
 import os
 import subprocess
@@ -91,26 +91,35 @@ else:
     print("No kept pictures yet.")''')
 
 
-def build(name):
+def load_part(n, name):
     nb = json.loads((ROOT / "notebooks" / f"{name}.ipynb").read_text(encoding="utf-8"))
     cells = nb["cells"]
-    extra = list(CLONE)
-    if name == "03_clip_search":
-        extra += CLIP_SETUP
-    if name == "0Z_final_task":
+    if name == "04_final_task":
         replace_in(cells, "f-kept", "in the file browser on the left open `my_images/`, right-click the file, **Download**.",
                    "in the file browser on the left (folder icon) open `DH-Workshop/notebooks/my_images/`, right-click the file, **Download**. Or run the cell after the list: it downloads all kept pictures as one zip.")
         k = [c["id"] for c in cells].index("f-kept-code")
         cells.insert(k + 1, ZIP_CELL)
-    nb["cells"] = cells[:1] + extra + cells[1:]            # the banner stays first
-    nb["metadata"] = {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
-                      "language_info": {"name": "python"}, "colab": {"provenance": []}}
-    out = ROOT / "colab" / f"{name}.ipynb"
+    for c in cells:                                         # cell ids must stay unique across the parts
+        c["id"] = f"p{n}-{c['id']}"
+    return cells
+
+
+def build():
+    parts = [load_part(n, name) for n, name in enumerate(PARTS, 1)]
+    setup = CLONE + CLIP_SETUP
+    cells = parts[0][:1] + setup + parts[0][1:]            # the welcome banner stays first
+    for p in parts[1:]:
+        cells += p
+    nb = {"cells": cells, "nbformat": 4, "nbformat_minor": 5,
+          "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
+                       "language_info": {"name": "python"}, "colab": {"provenance": []}}}
+    ids = [c["id"] for c in cells]
+    assert len(ids) == len(set(ids))
+    out = ROOT / "colab" / "workshop.ipynb"
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps(nb, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    print("wrote", out.relative_to(ROOT), f"({len(nb['cells'])} cells)")
+    print("wrote", out.relative_to(ROOT), f"({len(cells)} cells)")
 
 
 if __name__ == "__main__":
-    for n in NAMES:
-        build(n)
+    build()
