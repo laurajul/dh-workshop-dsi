@@ -539,26 +539,33 @@ class Deck:
         return path
 
 
+SWITCH_URL = "https://drive.switch.ch/index.php/s/JeirWKGtP2HBxEm"
+
+
 def submission_dir(name):
-    # ~/shared/submissions/<name>/ on the workshop server, otherwise data/submissions/<name>/ in the project.
-    base = Path.home() / "shared" / "submissions"
-    if not base.parent.exists():
-        base = PROJECT_ROOT / "data" / "submissions"
-    d = base / slug(name)
+    # submissions/<name>/ in the project folder (next to the notebooks, in the file browser). The shared folder is read-only:
+    # the files are handed in through the Switch drive (see hand_in_message).
+    d = PROJECT_ROOT / "submissions" / slug(name)
     d.mkdir(parents=True, exist_ok=True)
     return d
+
+
+def hand_in_message(d):
+    return (f"\nHand in: the files are in {d.relative_to(PROJECT_ROOT)}/ (file browser on the left; right-click a file, Download).\n"
+            f"Then open {SWITCH_URL}, create a folder with your name and drop the files in.\n"
+            f"You can add anything else you want to show: a screenshot, a few images, an .html page.")
 
 
 def save_submission(name, deck, manifest):
     d = submission_dir(name)
     deck.save(d / "index.html")
     (d / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"saved to {d}\n  index.html     the presentation (open it in a browser)\n  manifest.json  the IIIF manifest with your annotations")
+    print(f"saved to {d}\n  index.html     the presentation (open it in a browser)\n  manifest.json  the IIIF manifest with your annotations" + hand_in_message(d))
     return d
 
 
 def submit_notebook(name, notebook, html_copy=True, extra_files=()):
-    """Copy your own notebook into shared/submissions/<name>/ (together with an HTML copy that shows its outputs
+    """Copy your own notebook into submissions/<name>/ (together with an HTML copy that shows its outputs
     and opens in any browser without running anything). Save the notebook first (Ctrl+S), so the outputs are in the file."""
     import shutil
     import subprocess
@@ -573,7 +580,7 @@ def submit_notebook(name, notebook, html_copy=True, extra_files=()):
     if html_copy:
         r = subprocess.run([sys.executable, "-m", "nbconvert", "--to", "html", "--output-dir", str(d), str(nb)], capture_output=True, text=True)
         print("HTML copy written." if r.returncode == 0 else f"HTML copy failed (the notebook itself was copied):\n{r.stderr[-300:]}")
-    print(f"saved to {d}")
+    print(f"saved to {d}" + hand_in_message(d))
     return d
 
 

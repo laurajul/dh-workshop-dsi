@@ -37,3 +37,5 @@ harvest/
 __pycache__/
 *.pyc
 notebooks/my_images/
+submissions/
+misc/WORKSHOP_PLAN.md
