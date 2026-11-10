@@ -15,6 +15,10 @@ The script clones this repository to `~/DH-Workshop`, links the shared data fold
 
 If it stops with an error, send the message to the workshop team.
 
+## In Google Colab
+
+Use the **Open in Colab** buttons in the [README](README.md). The first cell of each notebook clones this repository, so all paths are the same as on the server. In `03_clip_search` you also mount your Google Drive, add the shared data folder to it as a shortcut (the link is in the notebook), and a cell links it to `~/data`.
+
 ## On your own computer
 
 Linux, Python 3.12:
