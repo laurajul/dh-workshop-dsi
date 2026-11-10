@@ -1,24 +1,35 @@
 #!/usr/bin/env bash
 # DH-Workshop setup – run once at the beginning of the workshop.
+#
+# Copy this file to your home directory first, then:
+#   chmod +x setup.sh && ./setup.sh
+#
 #   1. clones the workshop repository into ~/DH-Workshop
-#   2. creates a uv environment in ~/shared and installs requirements.txt
-#   3. registers a Jupyter kernel called "dh-workshop"
-#   4. links the shared data folder to ~/data (only if not already present)
+#   2. links the shared data folder to ~/data (only if not already present)
+#   3. registers a Jupyter kernel "dh-workshop" that uses the prebuilt
+#      environment in the shared folder (nothing is installed per user)
 set -euo pipefail
 
 REPO_URL="https://github.com/laurajul/DH-Workshop"
 REPO_DIR="$HOME/DH-Workshop"
-SHARED_DIR="$HOME/shared"
-DATA_SRC="/srv/shared/DSI-Workshop"
+SHARED_DIR="/srv/shared/DSI-Workshop"
+ENV_DIR="$SHARED_DIR/.venv"          # prebuilt environment (uploaded via azcopy)
+ENV_PYTHON="$ENV_DIR/bin/python"
 DATA_LINK="$HOME/data"
+KERNEL_NAME="dh-workshop"
 
 # --- checks -----------------------------------------------------------------
-if ! command -v uv >/dev/null 2>&1; then
-    echo "ERROR: 'uv' was not found. Please ask the workshop team for help." >&2
+if [ ! -d "$SHARED_DIR" ]; then
+    echo "ERROR: $SHARED_DIR does not exist. Please ask the workshop team for help." >&2
     exit 1
 fi
-if [ ! -d "$SHARED_DIR" ]; then
-    echo "ERROR: $SHARED_DIR does not exist." >&2
+if [ ! -x "$ENV_PYTHON" ]; then
+    echo "ERROR: $ENV_PYTHON not found or not executable." >&2
+    echo "       The shared environment is missing or broken. Please ask the workshop team." >&2
+    exit 1
+fi
+if ! "$ENV_PYTHON" -c "import ipykernel" >/dev/null 2>&1; then
+    echo "ERROR: the shared environment cannot run (ipykernel missing or python broken)." >&2
     exit 1
 fi
 
@@ -30,43 +41,22 @@ else
     git clone "$REPO_URL" "$REPO_DIR"
 fi
 
-# --- 2. uv environment in shared --------------------------------------------
-cd "$SHARED_DIR"
-
-# Use requirements.txt from shared; fall back to the one in the cloned repo.
-if [ -f "$SHARED_DIR/requirements.txt" ]; then
-    REQ_FILE="$SHARED_DIR/requirements.txt"
-elif [ -f "$REPO_DIR/requirements.txt" ]; then
-    REQ_FILE="$REPO_DIR/requirements.txt"
-else
-    echo "ERROR: requirements.txt not found in $SHARED_DIR or $REPO_DIR." >&2
-    exit 1
-fi
-
-if [ ! -f "$SHARED_DIR/pyproject.toml" ]; then
-    echo ">>> Initialising uv project in $SHARED_DIR ..."
-    uv init --bare
-fi
-
-echo ">>> Installing dependencies from $REQ_FILE ..."
-uv add -r "$REQ_FILE"
-
-# --- 3. Jupyter kernel -------------------------------------------------------
-echo ">>> Registering Jupyter kernel 'dh-workshop' ..."
-uv run python -m ipykernel install --user --name=dh-workshop --display-name "dh-workshop"
-
-# --- 4. link shared data folder to ~/data -------------------------------------
+# --- 2. link shared data folder to ~/data -----------------------------------
 # Never overwrite or nest anything: only create the link if nothing is at ~/data.
 if [ -L "$DATA_LINK" ]; then
     echo ">>> $DATA_LINK is already a symlink (-> $(readlink "$DATA_LINK")), leaving it as is."
 elif [ -e "$DATA_LINK" ]; then
     echo ">>> WARNING: $DATA_LINK already exists and is not a symlink, leaving it untouched." >&2
-elif [ ! -d "$DATA_SRC" ]; then
-    echo ">>> WARNING: $DATA_SRC does not exist, cannot create $DATA_LINK." >&2
 else
-    echo ">>> Linking $DATA_SRC -> $DATA_LINK ..."
-    ln -s "$DATA_SRC" "$DATA_LINK"
+    echo ">>> Linking $SHARED_DIR -> $DATA_LINK ..."
+    ln -s "$SHARED_DIR" "$DATA_LINK"
 fi
 
+# --- 3. Jupyter kernel from the shared environment --------------------------
+# Writes ~/.local/share/jupyter/kernels/dh-workshop/kernel.json, which points
+# to the shared python. Re-running simply refreshes it.
+echo ">>> Registering Jupyter kernel '$KERNEL_NAME' ..."
+"$ENV_PYTHON" -m ipykernel install --user --name="$KERNEL_NAME" --display-name "$KERNEL_NAME"
+
 echo
-echo "Setup complete. Start your notebooks with the 'dh-workshop' kernel."
+echo "Setup complete. Start your notebooks with the '$KERNEL_NAME' kernel."

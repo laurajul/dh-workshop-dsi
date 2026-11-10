@@ -36,3 +36,4 @@ harvest/
 # Python caches
 __pycache__/
 *.pyc
+notebooks/my_images/

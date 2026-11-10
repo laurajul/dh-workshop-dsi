@@ -95,7 +95,7 @@ class Collection:
         return (f"<img src='data:image/jpeg;base64,{b64encode(buf.getvalue()).decode()}' "
                 f"style='width:{size}px;height:{size}px;object-fit:cover;background:#eee'>")
 
-    def show_grid(self, indices, scores=None, size=170, numbered=False):
+    def show_grid(self, indices, scores=None, size=170, numbered=False, keep=True, caption="Search results"):
         # Show results as cards. numbered=True adds #0, #1, ... so that a result can be picked by number.
         with ThreadPoolExecutor(8) as ex:                          # fetch the images of the results in parallel
             list(ex.map(self.small_image, indices))
@@ -108,6 +108,9 @@ class Collection:
             cards += (f"<figure style='margin:0;width:{size}px;font:11px sans-serif'>{self.thumb(i, size)}"
                       f"<figcaption>{num}<b>{html.escape(r['title'][:60])}</b><br>{html.escape(r['institution'][:38])}{yr}{score}</figcaption></figure>")
         display(HTML(f"<div style='display:flex;gap:12px;flex-wrap:wrap'>{cards}</div>"))
+        if keep:                                                   # a button that saves the results for the presentation
+            from keep_helpers import contact_sheet, keep_button
+            keep_button(lambda: contact_sheet([(caption, [self.small_image(i) for i in indices])]), caption)
 
     # ---- search
 

@@ -191,7 +191,7 @@ class Picture:
         im.thumbnail((size, size))
         return self.with_quality(im, quality)
 
-    def show(self, regions=None, size=900):
+    def show(self, regions=None, size=900, keep=True):
         # The picture with its regions outlined and numbered, and the request behind each region.
         regions = regions or {}
         ov = self.crop(None, size)
@@ -202,6 +202,9 @@ class Picture:
             d.rectangle([x * k, y * k, (x + w) * k, (y + h) * k], outline=(220, 20, 60), width=3)
             d.text((x * k + 5, y * k + 3), f"{n} {name}", fill=(220, 20, 60))
         display(ov)
+        if keep:
+            from keep_helpers import keep_button
+            keep_button(lambda: ov, f"{self.label}, regions")
         rows = "".join(f"<tr><td style='padding-right:12px'>{n} {html.escape(str(name))}</td><td><code>{html.escape(self.region_url(r) or 'cut locally from the original: ' + str(self.clamp(r)))}</code></td></tr>"
                        for n, (name, r) in enumerate(regions.items(), 1))
         if rows:
@@ -276,8 +279,12 @@ class Experiment:
                      f"<div style='display:flex;gap:6px;flex-wrap:wrap'>{cards_html(self.coll, res['top'], res['scores'], size)}</div></div>")
         return rows
 
-    def show(self, size=110):
+    def show(self, size=110, keep=True):
         display(HTML(self.html(size)))
+        if keep:
+            from keep_helpers import contact_sheet, keep_button
+            keep_button(lambda: contact_sheet([(n, [self.coll.small_image(int(i)) for i in self.results[n]["top"]]) for n in self.results]),
+                        "Search with whole image and regions")
 
     def overlap(self):
         # How many of the top results two queries share, and how many different institutions each one reaches.
