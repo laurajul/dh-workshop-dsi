@@ -80,6 +80,8 @@ class Collection:
         print(f"embeddings: {self.V.shape}, {self.V.dtype}, {self.V.nbytes / 1e6:,.1f} MB")
         print(f"images with a working IIIF image service: {self.has_iiif.sum():,} ({self.has_iiif.mean():.1%})")
         print(f"images with a year: {(self.year > 0).sum():,}")
+        per = np.array(list(Counter(self.institution).values()))
+        print(f"images per institution: at most {per.max():,} (the sample is capped; {(per == per.max()).sum():,} institutions reach it), median {int(np.median(per)):,}")
 
     # ---- images (fetched from the institutions, cached locally)
 
