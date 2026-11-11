@@ -96,7 +96,7 @@ class Picture:
     """
 
     def __init__(self, source, coll=None, label=None, credit=""):
-        self.index = self.service = self.original = self.fallback = self.page = None
+        self.index = self.service = self.original = self.fallback = self.page = self.image_url = None
         self.credit = credit
         self._local = None
         if isinstance(source, (int, np.integer)):
@@ -121,7 +121,8 @@ class Picture:
         if self.service is None:
             self._load_original()
         print(f"{self.label}\n{self.width} x {self.height} px, "
-              + (f"IIIF image service: {self.service}" if self.service else "no image service: regions are cut locally"))
+              + (f"IIIF image service: {self.service}" if self.service else "no image service: regions are cut locally")
+              + (f"\nimage URL: {self.image_url}" if self.image_url else ""))
 
     def _init_service(self, base):
         info = session.get(base + "/info.json", timeout=30)
@@ -132,17 +133,24 @@ class Picture:
 
     def _load_original(self):
         if self._local is None:
-            path = CACHE_DIR / ("orig_" + hashlib.md5(self.original.encode()).hexdigest() + ".jpg")
-            if not path.exists():
-                try:
-                    r = session.get(self.original, timeout=120)
+            def cached(url):
+                return CACHE_DIR / ("orig_" + hashlib.md5(url.encode()).hexdigest() + ".jpg")
+
+            def fetch(url, timeout):
+                path = cached(url)
+                if not path.exists():
+                    r = session.get(url, timeout=timeout)
                     r.raise_for_status()
                     Image.open(BytesIO(r.content)).convert("RGB").save(path, quality=95)
-                except Exception as e:                                # many original links are dead or are not images
-                    if not self.fallback:
-                        raise
-                    print(f"original file not available ({type(e).__name__}); using the small version (about 400 px) instead")
-                    Image.open(BytesIO(session.get(self.fallback, timeout=60).content)).convert("RGB").save(path, quality=95)
+                return path
+
+            try:
+                path, self.image_url = fetch(self.original, 120), self.original
+            except Exception as e:                                    # many original links are dead or are not images
+                if not self.fallback:
+                    raise
+                print(f"original file not available ({type(e).__name__}); using the small version (about 400 px) instead")
+                path, self.image_url = fetch(self.fallback, 60), self.fallback
             self._local = Image.open(path).convert("RGB")
         self.width, self.height = self._local.size
 
