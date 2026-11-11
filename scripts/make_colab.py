@@ -65,7 +65,7 @@ The collection (metadata and CLIP vectors) is in a shared Google Drive folder.
     code("colab-link", '''import os
 import ipywidgets as widgets
 
-SHARED_FOLDER_URL = "PASTE-THE-LINK-TO-THE-SHARED-GOOGLE-DRIVE-FOLDER-HERE"     # <-- the instructor puts the link here
+SHARED_FOLDER_URL = "https://drive.google.com/drive/folders/1BKpsYAdGA07dQbtECEaYIhw5oOB0oChH?usp=sharing"     # <-- the instructor puts the link here
 FOLDER_NAME = "DSI-Workshop"        # the name of the folder in your My Drive after adding the shortcut
 
 display(widgets.HTML(f"<a href='{SHARED_FOLDER_URL}' target='_blank' style='font:16px sans-serif'>{SHARED_FOLDER_URL}</a>"))
