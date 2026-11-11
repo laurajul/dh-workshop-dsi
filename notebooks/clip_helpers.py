@@ -149,7 +149,7 @@ class Collection:
         try:
             return self.load_small(i)[0]
         except Exception:
-            return Image.new("RGB", (170, 170), "#ddd")         # the source did not answer
+            return Image.new("RGB", (170, 170), "#D3D3D3")         # the source did not answer
 
     def thumb(self, i, size=170):
         # An <img> tag with the image embedded, so that it shows in any notebook front end.
@@ -158,7 +158,7 @@ class Collection:
         buf = BytesIO()
         im.save(buf, "JPEG", quality=80)
         return (f"<img src='data:image/jpeg;base64,{b64encode(buf.getvalue()).decode()}' "
-                f"style='width:{size}px;height:{size}px;object-fit:cover;background:#eee'>")
+                f"style='width:{size}px;height:{size}px;object-fit:cover;background:#D3D3D3'>")
 
     def show_grid(self, indices, scores=None, size=170, numbered=False, keep=True, caption="Search results"):
         # Show results as cards. numbered=True adds #0, #1, ... so that a result can be picked by number.

@@ -31,7 +31,7 @@ from clip_helpers import CACHE_DIR, PROJECT_ROOT, europeana_url
 Image.MAX_IMAGE_PIXELS = None
 session = requests.Session()
 session.headers["User-Agent"] = "dh-workshop-region-notebook"
-ACCENT, CORAL, INK = "#BC8F8F", "#FF7F50", "#1f2430"
+ACCENT, CORAL, INK = "#BC8F8F", "#FF7F50", "#000000"
 MIRADOR_JS = "https://cdn.jsdelivr.net/npm/mirador@3.4.3/dist/mirador.min.js"
 
 
@@ -81,7 +81,7 @@ def iou(a, b):
 
 def show_html(doc, height=620):
     # Show a complete HTML page inside the notebook (the same way the Mirador viewers of the intro notebook are shown).
-    display(HTML(f"<iframe srcdoc=\"{html.escape(doc, quote=True)}\" style='width:100%;height:{height}px;border:1px solid #ccc'></iframe>"))
+    display(HTML(f"<iframe srcdoc=\"{html.escape(doc, quote=True)}\" style='width:100%;height:{height}px;border:1px solid #C0C0C0'></iframe>"))
 
 
 # ---------------------------------------------------------------- a picture and its regions
@@ -282,7 +282,7 @@ class Experiment:
             if q["preview"] is not None:
                 shown = img_tag(q["preview"], 160, "height:100px;width:auto;border:2px solid #dc143c")
             else:
-                shown = f"<div style='width:140px;height:100px;background:#f3eeee;font:italic 13px sans-serif;padding:6px;box-sizing:border-box'>{html.escape(q['text'] or '')}</div>"
+                shown = f"<div style='width:140px;height:100px;background:#FFFFFF;font:italic 13px sans-serif;padding:6px;box-sizing:border-box'>{html.escape(q['text'] or '')}</div>"
             rows += (f"<div style='display:flex;gap:12px;align-items:flex-start;margin:0 0 14px 0'>"
                      f"<div style='width:160px;font:600 12px sans-serif'>{html.escape(name)}<br>{shown}</div>"
                      f"<div style='display:flex;gap:6px;flex-wrap:wrap'>{cards_html(self.coll, res['top'], res['scores'], size)}</div></div>")
@@ -364,7 +364,7 @@ class TileScan:
             for i in np.argsort(s):                                 # strongest tiles are drawn last
                 x, y, w, h = self.regions[i]
                 a = int(150 * (s[i] - lo) / (hi - lo + 1e-9))
-                d.rectangle([x * f, y * f, (x + w) * f, (y + h) * f], fill=(255, 80, 40, a))
+                d.rectangle([x * f, y * f, (x + w) * f, (y + h) * f], fill=(255, 127, 80, a))
             ov = Image.alpha_composite(ov, layer)
         d = ImageDraw.Draw(ov)
         top = self.best(query, k)
@@ -480,9 +480,9 @@ class Deck:
     body{{margin:0;font:18px/1.45 sans-serif;color:{INK};background:#fff}}
     .slide{{display:none;padding:28px 44px;height:calc(100vh - 60px);box-sizing:border-box;overflow:auto}}
     .slide.on{{display:block}} h1{{font-size:40px;margin:0 0 6px}} h2{{font-size:28px;margin:0 0 14px;border-left:8px solid {ACCENT};padding-left:12px}}
-    .sub{{color:#666}} li{{margin:4px 0}} .row{{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}}
-    nav{{position:fixed;bottom:0;left:0;right:0;height:44px;background:#f6f1f1;display:flex;align-items:center;gap:12px;padding:0 20px;font-size:14px}}
-    nav button{{border:1px solid {ACCENT};background:#fff;border-radius:4px;padding:4px 14px;cursor:pointer}} iframe{{border:1px solid #ccc;width:100%}}
+    .sub{{color:#000000}} li{{margin:4px 0}} .row{{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}}
+    nav{{position:fixed;bottom:0;left:0;right:0;height:44px;background:#FFFFFF;display:flex;align-items:center;gap:12px;padding:0 20px;font-size:14px}}
+    nav button{{border:1px solid {ACCENT};background:#fff;border-radius:4px;padding:4px 14px;cursor:pointer}} iframe{{border:1px solid #C0C0C0;width:100%}}
     """
 
     def __init__(self, title, author="", subtitle=""):

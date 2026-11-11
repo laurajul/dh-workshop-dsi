@@ -15,7 +15,7 @@ import sys
 
 # Colours from misc/reference/paper_style.mplstyle (matplotlib names: rosybrown, coral, silver)
 COLORS = {"PART A": "#BC8F8F", "PART B": "#FF7F50", "APPENDIX": "#C0C0C0",
-          "WELCOME": "#708090", "IIIF": "#BC8F8F", "EUROPEANA": "#FF7F50"}   # section banners of the intro notebook
+          "WELCOME": "#C0C0C0", "IIIF": "#BC8F8F", "EUROPEANA": "#FF7F50"}   # section banners of the intro notebook
 
 
 PILL = "#8A2BE2"   # matplotlib "blueviolet", the fifth colour of paper_style.mplstyle
@@ -27,7 +27,7 @@ def divider(label, n, total, color, browser=False):
     # The line is an <hr>: JupyterLab ignores a height set on a <div> here (the bar came out thick), an <hr> is always thin.
     return (f'<div style="margin:80px 0 0 0;font:600 12px sans-serif;letter-spacing:.1em;color:{color}">'
             f'<span>{label} · {n} / {total}</span>&nbsp;&nbsp;{pill}</div>'
-            f'<hr style="border:0;border-top:1px solid {color};margin:6px 0 0 0">')
+            f'<hr style="border:0;border-top:3px solid {color};margin:6px 0 0 0">')
 
 
 def main(path, default_label="SLIDES"):

@@ -142,7 +142,7 @@ def show_results(items, numbered=True, size=170):
     for n, it in enumerate(items):
         num = f"<b style='color:#BC8F8F'>#{n}</b> " if numbered else ""
         cards += (f"<figure style='margin:0;width:{size}px;font:11px sans-serif'>"
-                  f"<img src='{get_item_preview(it) or ''}' style='width:{size}px;height:{size}px;object-fit:cover;background:#eee'>"
+                  f"<img src='{get_item_preview(it) or ''}' style='width:{size}px;height:{size}px;object-fit:cover;background:#D3D3D3'>"
                   f"<figcaption>{num}<b>{html.escape(get_item_title(it)[:60])}</b><br>"
                   f"{html.escape(str(get_item_creator(it))[:40])} ({get_item_year(it)})<br>"
                   f"<i>{html.escape(first_of(it.get('dataProvider'))[:40])}</i></figcaption></figure>")
@@ -227,7 +227,7 @@ def load_overview(refresh=False):
 
 # ---------------------------------------------------------------- tables and bars
 
-COLORS = {"IMAGE": "#2a78d6", "TEXT": "#eb6834", "SOUND": "#1baf7a", "VIDEO": "#eda100", "3D": "#e87ba4"}
+COLORS = {"IMAGE": "#C0C0C0", "TEXT": "#BC8F8F", "SOUND": "#FF7F50", "VIDEO": "#DC143C", "3D": "#8A2BE2"}
 LABELS = {"IMAGE": "Image", "TEXT": "Text", "SOUND": "Sound", "VIDEO": "Video", "3D": "3D"}
 
 
@@ -248,7 +248,7 @@ def show_table(rows, sort_by="total", n=20, first_col="Institution", art=False, 
             + ("<th>IIIF-linked</th>" if iiif else "") + "<th style='text-align:left'>Media mix</th>")
     body = ""
     for r in rows:
-        cells = "".join(f"<td style='text-align:right'>{r[t]:,}</td>" if r[t] else "<td style='text-align:right;color:#999'>–</td>" for t in TYPES)
+        cells = "".join(f"<td style='text-align:right'>{r[t]:,}</td>" if r[t] else "<td style='text-align:right;color:#C0C0C0'>–</td>" for t in TYPES)
         body += (f"<tr><td>{html.escape(r['name'])}</td><td style='text-align:right'><b>{r['total']:,}</b></td>{cells}"
                  + (f"<td style='text-align:right'>{r['art']:,}</td>" if art else "")
                  + (f"<td style='text-align:right'>{r['iiif']:,}</td>" if iiif else "") + f"<td>{mix_bar(r)}</td></tr>")
@@ -265,7 +265,7 @@ def century_label(c):
 def bar_table(pairs, total, title, label_fmt=lambda x: x):
     rows = "".join(
         f"<tr><td style='padding-right:10px'>{html.escape(str(label_fmt(k)))}</td><td style='text-align:right;padding-right:8px'>{v:,}</td>"
-        f"<td><div style='background:#2a78d6;height:10px;width:{max(v / total * 160, 1):.0f}px'></div></td></tr>" for k, v in pairs)
+        f"<td><div style='background:#BC8F8F;height:10px;width:{max(v / total * 160, 1):.0f}px'></div></td></tr>" for k, v in pairs)
     return f"<div><b>{title}</b><table style='font:12px sans-serif'>{rows}</table></div>"
 
 
@@ -298,7 +298,7 @@ def institution_preview(name, n_samples=12):
         bar_table(fac.get("proxy_dc_creator", []), max((c for _, c in fac.get("proxy_dc_creator", [])), default=1), "Most frequent creators"),
     ])
     thumbs = "".join(
-        f"<figure style='margin:0;width:150px;font:11px sans-serif'><img src='{(it.get('edmPreview') or [''])[0]}' style='width:150px;height:150px;object-fit:cover;background:#eee'>"
+        f"<figure style='margin:0;width:150px;font:11px sans-serif'><img src='{(it.get('edmPreview') or [''])[0]}' style='width:150px;height:150px;object-fit:cover;background:#D3D3D3'>"
         f"<figcaption>{html.escape(get_item_title(it)[:70])}</figcaption></figure>" for it in sample)
     display(HTML(f"<h4 style='font-family:sans-serif'>{html.escape(name)}: {total:,} items</h4>"
                  f"<div style='display:flex;gap:28px;flex-wrap:wrap'>{panels}</div>"

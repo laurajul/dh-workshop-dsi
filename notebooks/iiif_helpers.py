@@ -57,7 +57,7 @@ def url_field(label, url, note="", open_link=True):
           "if(navigator.clipboard){navigator.clipboard.writeText(i.value).catch(function(){document.execCommand('copy')})}"
           "else{document.execCommand('copy')};this.textContent='Copied';var b=this;setTimeout(function(){b.textContent='Copy'},1500)")
     opener = f"<a href='{u}' target='_blank' style='margin-left:8px'>open</a>" if open_link else ""
-    note_html = f"<div style='color:#666;font-size:12px;margin:2px 0 0 0'>{html.escape(note)}</div>" if note else ""
+    note_html = f"<div style='color:#000000;font-size:12px;margin:2px 0 0 0'>{html.escape(note)}</div>" if note else ""
     box = (f"<div style='margin:8px 0;font:14px sans-serif'><b>{html.escape(label)}</b><br>"
            f"<input id='{fid}' readonly value='{u}' onclick='this.select()' "
            f"style='width:75%;font:13px monospace;padding:4px'>"
@@ -93,7 +93,7 @@ def thumb_strip(canvases, height=220):
     for cv in canvases:
         _, svc = canvas_image(cv)
         tiles += (f"<figure style='margin:0;text-align:center;font:12px sans-serif'>"
-                  f"<img src='{svc}/full/,{height}/0/default.jpg' style='height:{height}px;border:1px solid #ccc'>"
+                  f"<img src='{svc}/full/,{height}/0/default.jpg' style='height:{height}px;border:1px solid #C0C0C0'>"
                   f"<figcaption>{html.escape(first(cv['label']))}</figcaption></figure>")
     display(HTML(f"<div style='display:flex;gap:12px;flex-wrap:wrap'>{tiles}</div>"))
 
@@ -109,8 +109,8 @@ def show_iiif(service, region="full", size="400,", rotation="0", quality="defaul
     url = iiif_url(service, region, size, rotation, quality)
     print(url)
     im, n = pil(url)
-    display(HTML(f"<img src='{url}' style='max-height:420px;border:1px solid #ccc'>"
-                 f"<div style='font:12px sans-serif;color:#666'>{im.width} × {im.height} px, {kb(n)}</div>"))
+    display(HTML(f"<img src='{url}' style='max-height:420px;border:1px solid #C0C0C0'>"
+                 f"<div style='font:12px sans-serif;color:#000000'>{im.width} × {im.height} px, {kb(n)}</div>"))
 
 
 def show_views(service, views, width=260):
@@ -119,7 +119,7 @@ def show_views(service, views, width=260):
     for title, region, size, rot, q in views:
         url = iiif_url(service, region, size, rot, q)
         cells += (f"<figure style='margin:0;font:12px sans-serif;text-align:center;max-width:{width + 10}px'>"
-                  f"<img src='{url}' style='max-width:{width}px;max-height:300px;border:1px solid #ccc'>"
+                  f"<img src='{url}' style='max-width:{width}px;max-height:300px;border:1px solid #C0C0C0'>"
                   f"<figcaption><b>{html.escape(title)}</b><br>"
                   f"<code style='font-size:10px;word-break:break-all'>/{region}/{size}/{rot}/{q}.jpg</code>"
                   f"<br><a href='{url}' target='_blank'>open in browser</a></figcaption></figure>")
@@ -217,7 +217,7 @@ def show_annotated_regions(annotation_page, canvas, body, service):
         region = tuple(int(v) for v in anno["target"].split("#xywh=")[1].split(","))
         ix, iy, iw, ih = canvas_to_image_region(region, canvas, body)
         url = f"{service}/{ix},{iy},{iw},{ih}/!300,300/0/default.jpg"
-        tiles += (f"<figure style='margin:0;font:12px sans-serif;text-align:center'><img src='{url}' style='border:1px solid #ccc'>"
+        tiles += (f"<figure style='margin:0;font:12px sans-serif;text-align:center'><img src='{url}' style='border:1px solid #C0C0C0'>"
                   f"<figcaption>{html.escape(anno['body']['value'])}<br><code>{ix},{iy},{iw},{ih}</code></figcaption></figure>")
     display(HTML(f"<div style='display:flex;gap:16px'>{tiles}</div>"))
 
@@ -246,7 +246,7 @@ def mirador(manifest_url, canvas_id=None, height=620, view=None):
 def show_mirador(*args, height=620, **kw):
     doc = mirador(*args, height=height, **kw)
     display(HTML(f"<iframe srcdoc=\"{html.escape(doc, quote=True)}\" "
-                 f"style='width:100%;height:{height}px;border:1px solid #ccc'></iframe>"))
+                 f"style='width:100%;height:{height}px;border:1px solid #C0C0C0'></iframe>"))
 
 
 def mirador_many(manifest_urls, height=620):
@@ -267,7 +267,7 @@ def show_mirador_many(manifest_urls, height=620):
     # Show several manifests side by side in one Mirador viewer inside the notebook.
     doc = mirador_many(manifest_urls, height)
     display(HTML(f"<iframe srcdoc=\"{html.escape(doc, quote=True)}\" "
-                 f"style='width:100%;height:{height}px;border:1px solid #ccc'></iframe>"))
+                 f"style='width:100%;height:{height}px;border:1px solid #C0C0C0'></iframe>"))
 
 
 # ---------------------------------------------------------------- reading a manifest
@@ -384,7 +384,7 @@ def show_chain(manifest_url, canvas=0):
     rows = chain_urls(manifest_url, canvas)
     fields = [(l, u, n, o) for l, u, n, o in rows if u]
     if not rows[-1][1]:                                                     # no image service: say where the chain ends
-        fields.append(widgets.HTML("<div style='margin:8px 0;font:14px sans-serif;color:#b00020'><b>4  no image service</b><br>"
-                                   "<span style='color:#666;font-size:12px'>The manifest names a plain image file. The Presentation API works, "
+        fields.append(widgets.HTML("<div style='margin:8px 0;font:14px sans-serif;color:#DC143C'><b>4  no image service</b><br>"
+                                   "<span style='color:#000000;font-size:12px'>The manifest names a plain image file. The Presentation API works, "
                                    "but there is no Image API behind it: no regions, no tiles, no info.json.</span></div>"))
     url_panel("From the manifest to the pixels", fields)
