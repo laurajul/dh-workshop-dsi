@@ -7,6 +7,7 @@ fetched from the institutions on demand and cached under data/image_cache/.
 import csv
 import hashlib
 import html
+import io
 import os
 from base64 import b64encode
 from collections import Counter
@@ -60,28 +61,78 @@ def bar_table(pairs, total, title):
 
 # ---------------------------------------------------------------- the collection
 
+class _Rows:
+    """The rows of metadata.csv, read from the file only when one is asked for (meta[i] is a dict, like a csv.DictReader row).
+    Holding all 600,000 rows as dicts needs about 1.5 GB of memory per notebook; this needs a few MB."""
+
+    def __init__(self, path):
+        self.path = path
+        self.offsets = []                 # byte position where each row starts
+        self.ids, self.institution, self.country, self.year, self.has_iiif = [], [], [], [], []
+        intern = {}                       # one string object per distinct institution / country
+        pos = 0
+
+        def lines(f):
+            nonlocal pos
+            for line in f:
+                pos += len(line)
+                yield line.decode("utf-8")
+
+        with open(path, "rb") as f:
+            reader = csv.reader(lines(f))
+            self.fields = next(reader)
+            ix = {k: self.fields.index(k) for k in ("id", "institution", "country", "year", "iiif_service")}
+            start = pos
+            for row in reader:
+                self.offsets.append(start)
+                start = pos
+                self.ids.append(row[ix["id"]])
+                self.institution.append(intern.setdefault(row[ix["institution"]], row[ix["institution"]]))
+                self.country.append(intern.setdefault(row[ix["country"]], row[ix["country"]]))
+                y = row[ix["year"]]
+                self.year.append(int(y) if y.isdigit() else 0)
+                self.has_iiif.append(bool(row[ix["iiif_service"]]))
+        self.offsets.append(pos)
+
+    def __len__(self):
+        return len(self.offsets) - 1
+
+    def __getitem__(self, i):
+        i = int(i)
+        if i < 0:
+            i += len(self)
+        if not 0 <= i < len(self):
+            raise IndexError(i)
+        with open(self.path, "rb") as f:
+            f.seek(self.offsets[i])
+            text = f.read(self.offsets[i + 1] - self.offsets[i]).decode("utf-8")
+        return dict(zip(self.fields, next(csv.reader(io.StringIO(text)))))
+
+    def __iter__(self):
+        for i in range(len(self)):
+            yield self[i]
+
+
 class Collection:
     """Metadata and CLIP vectors of the shared dataset, in the same order (row i of meta is vector i of V)."""
 
     def __init__(self):
-        with open(DATA / "metadata.csv", encoding="utf-8") as f:
-            self.meta = list(csv.DictReader(f))
+        self.meta = _Rows(DATA / "metadata.csv")
         npz = np.load(DATA / "embeddings" / "clip_vit_b32.npz")
         self.V = npz["vectors"]                                   # (N, 512), already L2-normalised
-        assert list(npz["ids"]) == [r["id"] for r in self.meta], "metadata.csv and embeddings are not aligned"
-        m = self.meta
-        self.institution = np.array([r["institution"] for r in m])
-        self.country = np.array([r["country"] for r in m])
-        self.year = np.array([int(r["year"]) if r["year"].isdigit() else 0 for r in m])
-        self.has_iiif = np.array([bool(r["iiif_service"]) for r in m])
+        assert list(npz["ids"]) == self.meta.ids, "metadata.csv and embeddings are not aligned"
+        self.meta.ids = None
+        self.institution = np.array(self.meta.institution, dtype=object)
+        self.country = np.array(self.meta.country, dtype=object)
+        self.year = np.array(self.meta.year)
+        self.has_iiif = np.array(self.meta.has_iiif)
+        self.meta.institution = self.meta.country = self.meta.year = self.meta.has_iiif = None
 
     def summary(self):
         print(f"{len(self.meta):,} images from {len(set(self.institution)):,} institutions in {len(set(self.country))} countries")
         print(f"embeddings: {self.V.shape}, {self.V.dtype}, {self.V.nbytes / 1e6:,.1f} MB")
         print(f"images with a working IIIF image service: {self.has_iiif.sum():,} ({self.has_iiif.mean():.1%})")
         print(f"images with a year: {(self.year > 0).sum():,}")
-        per = np.array(list(Counter(self.institution).values()))
-        print(f"images per institution: at most {per.max():,} (the sample is capped; {(per == per.max()).sum():,} institutions reach it), median {int(np.median(per)):,}")
 
     # ---- images (fetched from the institutions, cached locally)
 
