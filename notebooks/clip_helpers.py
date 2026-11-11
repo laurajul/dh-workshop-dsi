@@ -59,6 +59,19 @@ def bar_table(pairs, total, title):
     return f"<div><b>{title}</b><table style='font:12px sans-serif'>{rows}</table></div>"
 
 
+def show_vector(vec, cols=32, cell=20):
+    # Draw an embedding as a grid of coloured squares, one square per number: blueviolet negative, white zero, crimson positive.
+    v = np.asarray(vec, dtype=np.float32)
+    v = v / np.abs(v).max()                                             # -1 .. 1
+    neg, mid, pos = np.array([138, 43, 226]), np.array([255, 255, 255]), np.array([220, 20, 60])
+    rgb = np.where(v[:, None] < 0, mid + (neg - mid) * -v[:, None], mid + (pos - mid) * v[:, None])
+    rows = -(-len(v) // cols)
+    grid = np.full((rows * cols, 3), 255, dtype=np.uint8)
+    grid[:len(v)] = rgb.round().astype(np.uint8)
+    im = Image.fromarray(grid.reshape(rows, cols, 3)).resize((cols * cell, rows * cell), Image.NEAREST)
+    display(im)
+
+
 # ---------------------------------------------------------------- the collection
 
 class _Rows:
