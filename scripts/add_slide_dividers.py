@@ -25,7 +25,7 @@ def divider(label, n, total, color, browser=False):
     pill = (f'<span style="border:2.2px solid {PILL};border-radius:8px;background:#fff;color:{PILL};'
             f'padding:2px 10px;font:700 12px sans-serif;letter-spacing:.1em">BROWSER</span>') if browser else ""
     # The line is an <hr>: JupyterLab ignores a height set on a <div> here (the bar came out thick), an <hr> is always thin.
-    return (f'<div style="margin:1vh 0 0 0;font:600 12px sans-serif;letter-spacing:.1em;color:{color}">'
+    return (f'<div style="margin:80px 0 0 0;font:600 12px sans-serif;letter-spacing:.1em;color:{color}">'
             f'<span>{label} · {n} / {total}</span>&nbsp;&nbsp;{pill}</div>'
             f'<hr style="border:0;border-top:1px solid {color};margin:6px 0 0 0">')
 
